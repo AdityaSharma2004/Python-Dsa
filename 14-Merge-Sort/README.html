@@ -1,0 +1,470 @@
+<h1>14 - Merge Sort</h1>
+<p>Learn the classic divide and conquer sort: split the list in halves, sort each half, and merge the two sorted halves. It guarantees <code>O(n log n)</code> time. Ten programs cover the merge step, recursion, tracing, descending order, a bottom-up version, inversion counting, linked lists, stability, merging k lists and complexity analysis.</p>
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#a-topic-introduction">A. Topic Introduction</a></li>
+<li><a href="#b-core-concepts">B. Core Concepts</a></li>
+<li><a href="#c-how-it-works">C. How It Works</a></li>
+<li><a href="#d-time-and-space-complexity">D. Time and Space Complexity</a></li>
+<li><a href="#e-problems-for-practice">E. Problems for Practice</a></li>
+<li><a href="#f-installation-requirements">F. Installation Requirements</a></li>
+<li><a href="#g-how-to-run-the-files">G. How to Run the Files</a></li>
+<li><a href="#h-revision-notes">H. Revision Notes</a></li>
+</ul>
+<hr />
+<h2>A. Topic Introduction</h2>
+<p><strong>What it is.</strong> Merge Sort cuts the list into two halves, sorts each half recursively, and merges the two sorted halves into one sorted list. A list of size 0 or 1 is already sorted, which stops the recursion.</p>
+<p><strong>Why it matters in DSA.</strong> It is the standard example of divide and conquer, it always runs in <code>O(n log n)</code>, it is stable, and its merge step is reused to count inversions, merge k lists and sort linked lists.</p>
+<p><strong>Where it is used.</strong> Sorting large data, external sorting of files that do not fit in memory, sorting linked lists, stable sorting of records (Python's built-in sort, Timsort, is built on merging), and merging results from several sorted sources.</p>
+<p><strong>Everyday analogy.</strong> Two teachers each have a sorted pile of exam papers by roll number. To combine them, look at the top paper of each pile, take the smaller roll number, and repeat. That is the merge step.</p>
+<p>If you know Laravel: merging paginated, already ordered results from two database shards into one ordered list is exactly this merge.</p>
+<hr />
+<h2>B. Core Concepts</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Divide</td>
+<td>Split the list into a left and a right half.</td>
+</tr>
+<tr>
+<td>Conquer</td>
+<td>Sort each half recursively.</td>
+</tr>
+<tr>
+<td>Combine (merge)</td>
+<td>Join two sorted lists into one sorted list using two pointers.</td>
+</tr>
+<tr>
+<td>Base case</td>
+<td>A list of length 0 or 1.</td>
+</tr>
+<tr>
+<td>Recursion depth</td>
+<td>About <code>log2(n)</code> levels.</td>
+</tr>
+<tr>
+<td>Bottom-up merge sort</td>
+<td>Iterative version: merge runs of size 1, 2, 4, ...</td>
+</tr>
+<tr>
+<td>Stable sort</td>
+<td>When two front items are equal, take the left one first.</td>
+</tr>
+<tr>
+<td>Inversion</td>
+<td>A pair <code>i &lt; j</code> with <code>a[i] &gt; a[j]</code>; counted during the merge.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Divide and conquer tree for <code>[6, 5, 3, 1, 8, 7, 2, 4]</code></strong></p>
+<pre><code class="language-text">                 [6 5 3 1 8 7 2 4]
+                /                 \
+          [6 5 3 1]             [8 7 2 4]
+          /      \               /      \
+      [6 5]     [3 1]        [8 7]     [2 4]
+      /  \      /  \         /  \      /  \
+    [6] [5]   [3] [1]      [8] [7]   [2] [4]
+      \  /      \  /         \  /      \  /
+     [5 6]     [1 3]        [7 8]     [2 4]
+          \      /               \      /
+          [1 3 5 6]              [2 4 7 8]
+                \                 /
+                 [1 2 3 4 5 6 7 8]
+</code></pre>
+<p><strong>Control flow</strong></p>
+<pre><code class="language-mermaid">flowchart TD
+    A[merge_sort list] --&gt; B{length &lt;= 1?}
+    B -- yes --&gt; C[return list]
+    B -- no --&gt; D[split at the middle]
+    D --&gt; E[merge_sort left]
+    D --&gt; F[merge_sort right]
+    E --&gt; G[merge two sorted halves]
+    F --&gt; G
+    G --&gt; H[return merged list]
+</code></pre>
+<hr />
+<h2>C. How It Works</h2>
+<p><strong>Dry run of the merge step: <code>[1, 4, 7]</code> and <code>[2, 3, 9]</code></strong></p>
+<table>
+<thead>
+<tr>
+<th>Front of left</th>
+<th>Front of right</th>
+<th>Take</th>
+<th>Result so far</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>2</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>4</td>
+<td>2</td>
+<td>2</td>
+<td>1 2</td>
+</tr>
+<tr>
+<td>4</td>
+<td>3</td>
+<td>3</td>
+<td>1 2 3</td>
+</tr>
+<tr>
+<td>4</td>
+<td>9</td>
+<td>4</td>
+<td>1 2 3 4</td>
+</tr>
+<tr>
+<td>7</td>
+<td>9</td>
+<td>7</td>
+<td>1 2 3 4 7</td>
+</tr>
+<tr>
+<td>(left empty)</td>
+<td>9</td>
+<td>9</td>
+<td>1 2 3 4 7 9</td>
+</tr>
+</tbody>
+</table>
+<p>When one list runs out, the rest of the other is copied as it is.</p>
+<p><strong>Why it is <code>O(n log n)</code>.</strong> There are about <code>log2(n)</code> levels of splitting, and each level merges a total of <code>n</code> items. So the work is <code>n</code> per level times <code>log n</code> levels.</p>
+<p><strong>Why it is stable.</strong> When two front items are equal, the one from the left half is taken first, so equal items keep their original order.</p>
+<p><strong>Counting inversions while merging.</strong> If the right front is smaller than the left front, then it is smaller than every remaining item of the left half. Add the number of remaining left items to the inversion count.</p>
+<hr />
+<h2>D. Time and Space Complexity</h2>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>Time</th>
+<th>Space</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Best</td>
+<td>O(n log n)</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>Average</td>
+<td>O(n log n)</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>Worst</td>
+<td>O(n log n)</td>
+<td>O(n)</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Variant</th>
+<th>Extra space</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Array merge sort</td>
+<td><code>O(n)</code> for merged copies, plus <code>O(log n)</code> recursion stack</td>
+</tr>
+<tr>
+<td>Bottom-up merge sort</td>
+<td><code>O(n)</code>, no recursion stack</td>
+</tr>
+<tr>
+<td>Linked-list merge sort</td>
+<td><code>O(log n)</code> stack, relinking nodes (no copies)</td>
+</tr>
+<tr>
+<td>Merge k sorted lists (pairwise rounds)</td>
+<td><code>O(N log k)</code> time for <code>N</code> total items</td>
+</tr>
+</tbody>
+</table>
+<p>Stable: yes. Not in-place for arrays. Comparisons are at most <code>n * log2(n)</code> for powers of two (see Problem 10).</p>
+<hr />
+<h2>E. Problems for Practice</h2>
+<table>
+<thead>
+<tr>
+<th>No</th>
+<th>Title</th>
+<th>Difficulty</th>
+<th>Concept</th>
+<th>Python File</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Merge Two Sorted Lists</td>
+<td>Easy</td>
+<td>The two-pointer merge step</td>
+<td><code>01_merge_two_sorted_lists.py</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Recursive Merge Sort</td>
+<td>Easy</td>
+<td>Divide, conquer, merge</td>
+<td><code>02_recursive_merge_sort.py</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Merge Sort Trace</td>
+<td>Easy</td>
+<td>Printing splits and merges by depth</td>
+<td><code>03_merge_sort_trace.py</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Descending Merge Sort</td>
+<td>Easy</td>
+<td>Selectable order</td>
+<td><code>04_descending_merge_sort.py</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Iterative Bottom-Up Merge Sort</td>
+<td>Medium</td>
+<td>Doubling run size, no recursion</td>
+<td><code>05_iterative_bottom_up_merge_sort.py</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Count Inversions</td>
+<td>Medium</td>
+<td>Counting during the merge</td>
+<td><code>06_count_inversions.py</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Merge Sort on a Linked List</td>
+<td>Medium</td>
+<td>Find middle, split, merge nodes</td>
+<td><code>07_merge_sort_linked_list.py</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>Stable Merge Sort of Records</td>
+<td>Medium</td>
+<td>Key function and stability</td>
+<td><code>08_stable_merge_sort_records.py</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>Merge K Sorted Lists</td>
+<td>Medium</td>
+<td>Pairwise merge rounds</td>
+<td><code>09_merge_k_sorted_lists.py</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>Merge Sort Complexity Analysis</td>
+<td>Medium</td>
+<td>Comparison counts versus n log n</td>
+<td><code>10_merge_sort_complexity_analysis.py</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Problem 1 - Merge Two Sorted Lists (<code>01_merge_two_sorted_lists.py</code>)</h3>
+<p><strong>Statement.</strong> Given two lists that are each sorted ascending, produce one new sorted list with all elements of both. Do not use <code>sorted()</code> or <code>list.sort()</code>; write the merge step yourself.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">merge([1, 4, 7], [2, 3, 9]) = [1, 2, 3, 4, 7, 9]
+merge([2, 2, 5], [2, 3, 5]) = [2, 2, 2, 3, 5, 5]
+merge([], [5, 6]) = [5, 6]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> One or both lists empty; all of one list smaller than the other; duplicates across lists; negative numbers.</p>
+<p><strong>Hints.</strong>
+- Keep one index per list and compare the two front items.
+- Take from the left when the values are equal (this keeps the merge stable).
+- After the loop, append whatever is left of the non-empty list.</p>
+<h3>Problem 2 - Recursive Merge Sort (<code>02_recursive_merge_sort.py</code>)</h3>
+<p><strong>Statement.</strong> Sort a list of integers ascending with Merge Sort. Write both the recursive splitting and the merge step yourself.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[38, 27, 43, 3, 9, 82, 10] -&gt; [3, 9, 10, 27, 38, 43, 82]
+[4, -2, 4, 0, -2, 7]       -&gt; [-2, -2, 0, 4, 4, 7]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty, single element, duplicates, already sorted, reverse sorted, odd and even lengths, negatives.</p>
+<p><strong>Hints.</strong>
+- Base case: length 0 or 1 returns the list.
+- Split at <code>len // 2</code>, sort each half, then merge them.
+- Return a new list; the merge helper from Problem 1 can be reused (copy it in, files are standalone).</p>
+<h3>Problem 3 - Merge Sort Trace (<code>03_merge_sort_trace.py</code>)</h3>
+<p><strong>Statement.</strong> Print every split and every merge, indented by recursion depth, so the divide-and-conquer tree becomes visible.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Input: [6, 5, 3, 1, 8, 7, 2, 4]
+split [6, 5, 3, 1, 8, 7, 2, 4] -&gt; [6, 5, 3, 1] | [8, 7, 2, 4]
+  split [6, 5, 3, 1] -&gt; [6, 5] | [3, 1]
+    split [6, 5] -&gt; [6] | [5]
+    merge [6] + [5] -&gt; [5, 6]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Single element (no split or merge lines), empty list, odd length (halves differ by one), duplicates.</p>
+<p><strong>Hints.</strong>
+- Pass a <code>depth</code> argument and increase it on each recursive call.
+- Indent with a fixed number of spaces times the depth.
+- Print the split before recursing and the merge after both halves return.</p>
+<h3>Problem 4 - Descending Merge Sort (<code>04_descending_merge_sort.py</code>)</h3>
+<p><strong>Statement.</strong> Sort from largest to smallest. Make the order configurable so one function sorts both ways.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Original: [12, 11, 13, 5, 6, 7]
+Descending: [13, 12, 11, 7, 6, 5]
+Ascending:  [5, 6, 7, 11, 12, 13]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty, single element, all equal, already descending, negatives.</p>
+<p><strong>Hints.</strong>
+- Only the choice made inside the merge step changes.
+- When the front items are equal, still take from the left to stay stable.
+- Pass a boolean down through the recursive calls.</p>
+<h3>Problem 5 - Iterative Bottom-Up Merge Sort (<code>05_iterative_bottom_up_merge_sort.py</code>)</h3>
+<p><strong>Statement.</strong> Sort a list with Merge Sort without recursion. Start with runs of size 1 and repeatedly merge neighbouring runs, doubling the run size every pass.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[5, 2, 9, 1, 5, 6, 3] -&gt; [1, 2, 3, 5, 5, 6, 9]
+[10, -3, 7, 7, 0, -3, 2, 8, 1] -&gt; [-3, -3, 0, 1, 2, 7, 7, 8, 10]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty, single element; a length that is not a power of two (the last block of a pass may be short or have no partner); duplicates.</p>
+<p><strong>Hints.</strong>
+- Outer loop: <code>width = 1, 2, 4, ...</code> while <code>width &lt; n</code>.
+- Inner loop: step through the list in jumps of <code>2 * width</code> and merge the block pairs.
+- Clamp the middle and end indexes to <code>n</code> so the last block does not overrun.</p>
+<h3>Problem 6 - Count Inversions (<code>06_count_inversions.py</code>)</h3>
+<p><strong>Statement.</strong> An inversion is a pair of positions <code>i &lt; j</code> with <code>arr[i] &gt; arr[j]</code>. Count the inversions of a list in <code>O(n log n)</code> time. A brute-force <code>O(n^2)</code> version is included to verify the answer.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[2, 4, 1, 3, 5]: inversions=3 (brute force=3) OK
+[5, 4, 3, 2, 1]: inversions=10 (brute force=10) OK
+[3, 1, 2, 3, 1]: inversions=5 (brute force=5) OK
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty or one element (0); sorted list (0); reverse sorted list (<code>n(n-1)/2</code>); equal elements are not inversions.</p>
+<p><strong>Hints.</strong>
+- Return the pair (sorted list, inversion count) from every recursive call.
+- During the merge, when you take from the right half, add the number of items still waiting in the left half.
+- Take from the left on ties so that equal items are not counted.</p>
+<h3>Problem 7 - Merge Sort on a Linked List (<code>07_merge_sort_linked_list.py</code>)</h3>
+<p><strong>Statement.</strong> Sort a singly linked list in ascending order by relinking nodes. Do not copy the values into a Python list.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Before: 4 -&gt; 2 -&gt; 1 -&gt; 3
+After : 1 -&gt; 2 -&gt; 3 -&gt; 4
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list, single node, two nodes, duplicates, already sorted, reversed.</p>
+<p><strong>Hints.</strong>
+- Find the middle with a slow and a fast pointer.
+- Cut the list by setting the <code>next</code> of the middle node to <code>None</code>.
+- Merge two sorted lists by moving a tail pointer; a dummy head node simplifies it.</p>
+<h3>Problem 8 - Stable Merge Sort of Records (<code>08_stable_merge_sort_records.py</code>)</h3>
+<p><strong>Statement.</strong> Sort <code>(name, marks)</code> records by marks ascending so records with equal marks keep their original order. Then sort by name with the same function to show that a key function makes it reusable.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Original : [('Asha', 80), ('Bob', 70), ('Chen', 80), ('Dina', 70), ('Eli', 60)]
+By marks : [('Eli', 60), ('Bob', 70), ('Dina', 70), ('Asha', 80), ('Chen', 80)]
+By name  : [('Asha', 80), ('Bob', 70), ('Chen', 80), ('Dina', 70), ('Eli', 60)]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list, all keys equal (output equals input), single record, string keys.</p>
+<p><strong>Hints.</strong>
+- Accept a function that returns the key of a record and compare keys, not records.
+- In the merge take the left item when <code>key(left) &lt;= key(right)</code>.
+- The same code sorts by any field because only the key function changes.</p>
+<h3>Problem 9 - Merge K Sorted Lists (<code>09_merge_k_sorted_lists.py</code>)</h3>
+<p><strong>Statement.</strong> Given <code>k</code> ascending lists, merge them into one sorted list. Use divide and conquer: merge the lists in pairs, round after round, until one list remains.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Input: [[1, 4, 7], [2, 5, 8], [0, 3, 6, 9]]
+round 1: 3 lists -&gt; 2 lists
+round 2: 2 lists -&gt; 1 lists
+Merged: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+Same as one-by-one merge: True
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> No lists; one list; empty lists inside the input; duplicates across lists; lists of very different lengths.</p>
+<p><strong>Hints.</strong>
+- In each round merge list 0 with list 1, list 2 with list 3, and so on; an odd last list is carried over.
+- Each round roughly halves the number of lists, so there are about <code>log k</code> rounds.
+- Merging one by one into a growing result is slower (<code>O(N * k)</code>); keep it only as a check.</p>
+<h3>Problem 10 - Merge Sort Complexity Analysis (<code>10_merge_sort_complexity_analysis.py</code>)</h3>
+<p><strong>Statement.</strong> Count the element comparisons Merge Sort makes on inputs of growing size and different orders (sorted, reversed, shuffled). Compare with <code>n * log2(n)</code> and with the <code>n^2</code> growth of a quadratic sort.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">    n  sorted  reversed  shuffled  n*log2(n)    n*n
+    8      12        12        17         24     64
+  256    1024      1024      1715       2048  65536
+Every column stays at or below n*log2(n); n*n grows much faster.
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> <code>n = 1</code> gives zero comparisons; sizes are powers of two so <code>n * log2(n)</code> is exact; data with duplicates.</p>
+<p><strong>Hints.</strong>
+- Add a counter incremented every time two front items are compared in the merge.
+- Use a fixed shuffled list (or a seeded generator) so the output is repeatable.
+- Print the formulas next to the measured counts to see the match.</p>
+<hr />
+<h2>F. Installation Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python version</td>
+<td>Python 3.8 or newer</td>
+</tr>
+<tr>
+<td>Packages</td>
+<td>None. Standard library only</td>
+</tr>
+<tr>
+<td>Extra installation</td>
+<td>Nothing to install beyond Python itself</td>
+</tr>
+</tbody>
+</table>
+<p>Check your installation with <code>python --version</code> (see section G).</p>
+<hr />
+<h2>G. How to Run the Files</h2>
+<ol>
+<li>Open a terminal: <strong>Windows</strong> - press <code>Win + R</code>, type <code>cmd</code> (or open PowerShell / VS Code terminal). <strong>Linux/macOS</strong> - open Terminal.</li>
+<li>Verify Python:
+   <code>bash
+   python --version      # Windows (or: py --version)
+   python3 --version     # Linux / macOS</code></li>
+<li>Move into the topic folder and run a file.</li>
+</ol>
+<p><strong>Windows</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice\14-Merge-Sort
+python 01_merge_two_sorted_lists.py
+</code></pre>
+<p>If <code>python</code> is not recognised, use the Python launcher: <code>py 01_merge_two_sorted_lists.py</code>.</p>
+<p><strong>Linux / macOS</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice/14-Merge-Sort
+python3 01_merge_two_sorted_lists.py
+</code></pre>
+<p>Every file is a standalone program: it needs no other file and no internet.</p>
+<hr />
+<h2>H. Revision Notes</h2>
+<p><strong>Key concepts</strong>
+- Split in half, sort both halves, merge with two pointers.
+- <code>O(n log n)</code> in best, average and worst case; <code>O(n)</code> extra space for arrays.
+- Stable when ties are taken from the left half.
+- The merge step also counts inversions and merges k lists.</p>
+<p><strong>Common mistakes</strong>
+- Forgetting the base case (infinite recursion).
+- Taking from the right on ties, which breaks stability.
+- Not appending the leftover items after one list runs out.
+- Slicing in every call and forgetting that slices copy (extra cost and memory).
+- Running past the end in the bottom-up version for non-power-of-two sizes.</p>
+<p><strong>Interview tips</strong>
+- State <code>O(n log n)</code> time and <code>O(n)</code> space, and say why: <code>log n</code> levels, <code>n</code> work per level.
+- Prefer merge sort over quicksort for linked lists and when stability or guaranteed worst case matters.
+- For inversions, explain the "remaining left items" trick in one sentence.
+- Be ready to write the merge step on its own; it is asked as a separate question.</p>

@@ -1,0 +1,541 @@
+<h1>17 - Dynamic Programming</h1>
+<p>Learn dynamic programming: remember answers to subproblems instead of recomputing them. Ten classic problems take you from Fibonacci to knapsack, subsequences and grid paths, using both memoization and tabulation.</p>
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#a-topic-introduction">A. Topic Introduction</a></li>
+<li><a href="#b-core-concepts">B. Core Concepts</a></li>
+<li><a href="#c-how-it-works">C. How It Works</a></li>
+<li><a href="#d-time-and-space-complexity">D. Time and Space Complexity</a></li>
+<li><a href="#e-problems-for-practice">E. Problems for Practice</a></li>
+<li><a href="#f-installation-requirements">F. Installation Requirements</a></li>
+<li><a href="#g-how-to-run-the-files">G. How to Run the Files</a></li>
+<li><a href="#h-revision-notes">H. Revision Notes</a></li>
+</ul>
+<hr />
+<h2>A. Topic Introduction</h2>
+<p><strong>What it is.</strong> Dynamic programming (DP) solves a problem by breaking it into overlapping subproblems, solving each subproblem only once, and storing the answer so it is never recomputed. Two styles exist: <strong>top-down</strong> (recursion plus a cache, called memoization) and <strong>bottom-up</strong> (fill a table from the smallest case upward, called tabulation).</p>
+<p><strong>Why it matters in DSA.</strong> DP turns exponential brute force into polynomial time. It is one of the most tested interview topics: stairs, coins, knapsack, subsequences and grid paths all follow the same recipe.</p>
+<p><strong>Where it is used.</strong> Route and cost optimisation, text diff tools (longest common subsequence), spell-checkers, resource allocation and budgeting, scheduling, and bioinformatics sequence alignment.</p>
+<p><strong>Everyday analogy.</strong> Writing the answer to a hard sum on the margin of your notebook so you can copy it next time instead of working it out again.</p>
+<p>If you know Laravel: memoization is just <code>Cache::remember($key, fn () =&gt; compute())</code>, and tabulation is filling an array by looping from the base case. Same idea, but the cache lives inside one function call.</p>
+<p><strong>Recipe for a DP problem</strong>
+1. Define the state: what does <code>dp[i]</code> (or <code>dp[i][j]</code>) mean in plain words?
+2. Write the transition: how does a state come from smaller states?
+3. Set the base cases.
+4. Choose the order that fills smaller states first.
+5. Read the answer from the right cell; optionally backtrack to rebuild the choice.</p>
+<hr />
+<h2>B. Core Concepts</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Overlapping subproblems</td>
+<td>The same smaller question is asked many times (for example <code>fib(3)</code> inside <code>fib(5)</code> and <code>fib(4)</code>).</td>
+</tr>
+<tr>
+<td>Optimal substructure</td>
+<td>The best answer to the whole is built from the best answers to its parts.</td>
+</tr>
+<tr>
+<td>State</td>
+<td>The few numbers that describe a subproblem (index, remaining amount, ...).</td>
+</tr>
+<tr>
+<td>Transition</td>
+<td>The formula linking a state to smaller states.</td>
+</tr>
+<tr>
+<td>Memoization</td>
+<td>Top-down: recursion plus a dictionary or list cache.</td>
+</tr>
+<tr>
+<td>Tabulation</td>
+<td>Bottom-up: fill a table in order, no recursion.</td>
+</tr>
+<tr>
+<td>Space optimisation</td>
+<td>Keep only the rows or variables still needed.</td>
+</tr>
+<tr>
+<td>Backtracking the table</td>
+<td>Walking back through the table to find which choices gave the best value.</td>
+</tr>
+<tr>
+<td>Pseudo-polynomial</td>
+<td>Time depends on a numeric value (such as the capacity <code>W</code>) rather than on the input length.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Plain recursion versus DP (Fibonacci)</strong></p>
+<pre><code class="language-text">fib(5)
+ |-- fib(4)
+ |    |-- fib(3)  &lt;- computed
+ |    `-- fib(2)
+ `-- fib(3)       &lt;- computed AGAIN
+</code></pre>
+<p>With a cache each <code>fib(k)</code> is computed once, so the tree collapses into a straight line of <code>n</code> steps.</p>
+<p><strong>Typical DP shapes in this folder</strong></p>
+<pre><code class="language-text">1-D line      : dp[i]              Fibonacci, stairs, house robber, coins, LIS
+2-D table     : dp[i][j]           knapsack (items x capacity), LCS (a x b), grid paths
+boolean table : dp[i][s] = True?   subset sum
+</code></pre>
+<p><strong>Flow</strong></p>
+<pre><code class="language-mermaid">flowchart LR
+    S[&quot;Define state&quot;] --&gt; T[&quot;Write transition&quot;]
+    T --&gt; B[&quot;Set base cases&quot;]
+    B --&gt; O[&quot;Fill in order&quot;]
+    O --&gt; A[&quot;Read answer / backtrack&quot;]
+</code></pre>
+<hr />
+<h2>C. How It Works</h2>
+<p><strong>Dry run 1: House Robber, money <code>[2, 7, 9, 3, 1]</code></strong> (<code>dp[i]</code> = best total using the first <code>i</code> houses; <code>dp[i] = best(dp[i-1], dp[i-2] + money[i-1])</code>)</p>
+<table>
+<thead>
+<tr>
+<th>i</th>
+<th>house value</th>
+<th>skip it: dp[i-1]</th>
+<th>take it: dp[i-2] + value</th>
+<th>dp[i]</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>0</td>
+</tr>
+<tr>
+<td>1</td>
+<td>2</td>
+<td>0</td>
+<td>0 + 2</td>
+<td>2</td>
+</tr>
+<tr>
+<td>2</td>
+<td>7</td>
+<td>2</td>
+<td>0 + 7</td>
+<td>7</td>
+</tr>
+<tr>
+<td>3</td>
+<td>9</td>
+<td>7</td>
+<td>2 + 9</td>
+<td>11</td>
+</tr>
+<tr>
+<td>4</td>
+<td>3</td>
+<td>11</td>
+<td>7 + 3</td>
+<td>11</td>
+</tr>
+<tr>
+<td>5</td>
+<td>1</td>
+<td>11</td>
+<td>11 + 1</td>
+<td>12</td>
+</tr>
+</tbody>
+</table>
+<p>Table <code>[0, 2, 7, 11, 11, 12]</code>, answer 12 (houses 0, 2 and 4).</p>
+<p><strong>Dry run 2: fewest coins, coins <code>[1, 5, 6, 9]</code>, amount 11</strong> (<code>dp[a]</code> = fewest coins to make <code>a</code>)</p>
+<pre><code class="language-text">a:   0 1 2 3 4 5 6 7 8 9 10 11
+dp:  0 1 2 3 4 1 1 2 3 1  2  2
+</code></pre>
+<p><code>dp[11] = min(dp[10]+1, dp[6]+1, dp[5]+1, dp[2]+1) = 2</code> (coins 5 and 6). A greedy choice would take 9 first and end with 3 coins (9, 1, 1), so greedy fails here and DP is needed.</p>
+<p><strong>Dry run 3: 0/1 Knapsack, weights <code>[1, 3, 4, 5]</code>, values <code>[1, 4, 5, 7]</code>, capacity 7</strong></p>
+<pre><code class="language-text">capacity:       0  1  2  3  4  5  6  7
+no items        0  0  0  0  0  0  0  0
+item 1 (1,1)    0  1  1  1  1  1  1  1
+item 2 (3,4)    0  1  1  4  5  5  5  5
+item 3 (4,5)    0  1  1  4  5  6  6  9
+item 4 (5,7)    0  1  1  4  5  7  8  9
+</code></pre>
+<p>Each cell: <code>max(cell above, value + cell above at capacity - weight)</code>. Best value 9, taking the items of weight 3 and 4.</p>
+<p><strong>Dry run 4: Longest Common Subsequence of <code>"ABCBDAB"</code> and <code>"BDCABA"</code></strong></p>
+<p>If the letters match: <code>dp[i][j] = dp[i-1][j-1] + 1</code>. If not: <code>dp[i][j] = best(dp[i-1][j], dp[i][j-1])</code>. The bottom-right cell is 4. Walk back from it: on a match record the letter and move diagonally; otherwise move toward the larger neighbour. One answer is <code>"BCBA"</code>.</p>
+<p><strong>Dry run 5: Coin change ways, coins <code>[1, 2, 5]</code>, amount 5</strong></p>
+<p>Process one coin at a time (outer loop over coins gives combinations, not orderings).</p>
+<pre><code class="language-text">amount:        0 1 2 3 4 5
+start:         1 0 0 0 0 0
+after coin 1:  1 1 1 1 1 1
+after coin 2:  1 1 2 2 3 3
+after coin 5:  1 1 2 2 3 4
+</code></pre>
+<p>Answer 4: <code>1+1+1+1+1</code>, <code>1+1+1+2</code>, <code>1+2+2</code>, <code>5</code>.</p>
+<p><strong>Dry run 6: Grid paths with an obstacle, 3 x 3, centre blocked</strong></p>
+<pre><code class="language-text">1  1  1
+1  X  1        each cell = cell above + cell to the left
+1  1  2        blocked cell = 0, answer in the bottom-right = 2
+</code></pre>
+<hr />
+<h2>D. Time and Space Complexity</h2>
+<table>
+<thead>
+<tr>
+<th>Problem</th>
+<th>State</th>
+<th>Time</th>
+<th>Space (table)</th>
+<th>Better space</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fibonacci</td>
+<td><code>dp[i]</code></td>
+<td>O(n)</td>
+<td>O(n)</td>
+<td>O(1) two variables</td>
+</tr>
+<tr>
+<td>Climbing stairs</td>
+<td><code>dp[i]</code></td>
+<td>O(n * k) for k step sizes</td>
+<td>O(n)</td>
+<td>O(1) for the classic version</td>
+</tr>
+<tr>
+<td>House robber</td>
+<td><code>dp[i]</code></td>
+<td>O(n)</td>
+<td>O(n)</td>
+<td>O(1) two variables (value only)</td>
+</tr>
+<tr>
+<td>Minimum coins</td>
+<td><code>dp[amount]</code></td>
+<td>O(amount * coins)</td>
+<td>O(amount)</td>
+<td>-</td>
+</tr>
+<tr>
+<td>Coin change ways</td>
+<td><code>dp[amount]</code></td>
+<td>O(amount * coins)</td>
+<td>O(amount)</td>
+<td>-</td>
+</tr>
+<tr>
+<td>0/1 knapsack</td>
+<td><code>dp[item][capacity]</code></td>
+<td>O(n * W)</td>
+<td>O(n * W)</td>
+<td>O(W) one row</td>
+</tr>
+<tr>
+<td>LCS</td>
+<td><code>dp[i][j]</code></td>
+<td>O(m * n)</td>
+<td>O(m * n)</td>
+<td>O(min(m, n)) for length only</td>
+</tr>
+<tr>
+<td>LIS</td>
+<td><code>dp[i]</code></td>
+<td>O(n^2)</td>
+<td>O(n)</td>
+<td>O(n log n) time with the tails method</td>
+</tr>
+<tr>
+<td>Grid unique paths</td>
+<td><code>dp[r][c]</code></td>
+<td>O(m * n)</td>
+<td>O(m * n)</td>
+<td>O(n) one row</td>
+</tr>
+<tr>
+<td>Subset sum</td>
+<td><code>dp[i][sum]</code></td>
+<td>O(n * target)</td>
+<td>O(n * target)</td>
+<td>O(target)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Naive versus DP.</strong> Plain Fibonacci recursion is <code>O(2^n)</code> (about 2.7 million calls for <code>n = 30</code>); memoization makes it <code>O(n)</code>. Brute-force knapsack tries all <code>2^n</code> subsets; DP needs <code>n * W</code> cells.</p>
+<p><strong>Pseudo-polynomial.</strong> Knapsack, subset sum and coin problems depend on the numeric size of the capacity, target or amount. They are fast for small numbers but grow quickly if the target is huge.</p>
+<hr />
+<h2>E. Problems for Practice</h2>
+<table>
+<thead>
+<tr>
+<th>No</th>
+<th>Title</th>
+<th>Difficulty</th>
+<th>Concept</th>
+<th>Python File</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Fibonacci with Memoization and Tabulation</td>
+<td>Easy</td>
+<td>Memo, table and space-optimised DP</td>
+<td><code>01_fibonacci_memo_tabulation.py</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Climbing Stairs</td>
+<td>Easy</td>
+<td>Counting ways with a 1-D table</td>
+<td><code>02_climbing_stairs.py</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>House Robber</td>
+<td>Easy</td>
+<td>Take or skip, maximum non-adjacent sum</td>
+<td><code>03_house_robber.py</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Minimum Number of Coins</td>
+<td>Medium</td>
+<td>Fewest coins, unbounded choices</td>
+<td><code>04_minimum_coins.py</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Coin Change - Number of Ways</td>
+<td>Medium</td>
+<td>Combinations versus ordered sequences</td>
+<td><code>05_coin_change_ways.py</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>0/1 Knapsack</td>
+<td>Medium</td>
+<td>2-D table, take or leave each item</td>
+<td><code>06_zero_one_knapsack.py</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Longest Common Subsequence</td>
+<td>Medium</td>
+<td>2-D table over two strings</td>
+<td><code>07_longest_common_subsequence.py</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>Longest Increasing Subsequence</td>
+<td>Medium</td>
+<td>O(n^2) DP and O(n log n) tails</td>
+<td><code>08_longest_increasing_subsequence.py</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>Unique Paths in a Grid</td>
+<td>Medium</td>
+<td>2-D grid DP with obstacles and costs</td>
+<td><code>09_grid_unique_paths.py</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>Subset Sum and Equal-Sum Partition</td>
+<td>Medium</td>
+<td>Boolean DP, reachable sums</td>
+<td><code>10_subset_sum.py</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Problem 1 - Fibonacci with Memoization and Tabulation (<code>01_fibonacci_memo_tabulation.py</code>)</h3>
+<p><strong>Statement.</strong> Compute the n-th Fibonacci number (<code>F(0)=0</code>, <code>F(1)=1</code>, <code>F(n)=F(n-1)+F(n-2)</code>). Show slow plain recursion, then fix it with memoization (top-down), tabulation (bottom-up) and a space-optimised loop.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">n=10: naive=55 (177 calls), memo=55, table=55, optimised=55
+n=30: 832040, naive needs 2692537 calls
+n=90: 2880067194370816120
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> <code>n = 0</code> and <code>n = 1</code> (base cases); negative <code>n</code> rejected; large <code>n</code> is exact because Python integers do not overflow.</p>
+<p><strong>Hints.</strong>
+- Naive: call yourself for <code>n-1</code> and <code>n-2</code>; count calls to see the blow-up.
+- Memo: check the cache first, store the answer before returning.
+- Table and loop: start from the base cases and move upward, keeping only the last two values for the loop.</p>
+<h3>Problem 2 - Climbing Stairs (<code>02_climbing_stairs.py</code>)</h3>
+<p><strong>Statement.</strong> You can climb 1 or 2 steps at a time. In how many distinct ways can you reach step <code>n</code>? Then generalise to any step sizes from a given list.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">classic: n=2 -&gt; 2, n=3 -&gt; 3, n=5 -&gt; 8, n=10 -&gt; 89
+n=6 with steps {1, 3, 4} is also computed
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> <code>n = 0</code> has 1 way (do nothing); <code>n = 1</code>; step sizes larger than <code>n</code>; empty step list gives 0 ways for <code>n &gt; 0</code>.</p>
+<p><strong>Hints.</strong>
+- The last move was a 1-step or a 2-step, so ways(n) adds two earlier answers.
+- For general steps add ways(n - s) for each allowed size <code>s</code> that does not go below zero.
+- Notice the classic answer is the Fibonacci sequence shifted by one.</p>
+<h3>Problem 3 - House Robber (<code>03_house_robber.py</code>)</h3>
+<p><strong>Statement.</strong> Houses on a street hold some money, and you cannot take from two neighbouring houses. Return the maximum money you can take and which houses give it.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">money = [2, 7, 9, 3, 1]
+dp table: [0, 2, 7, 11, 11, 12]
+maximum 12 from houses [0, 2, 4]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty street (0); one house; two houses (take the larger); all zeros; equal neighbours.</p>
+<p><strong>Hints.</strong>
+- For each house choose the better of skipping it or taking it plus the best from two houses back.
+- Keep the full table if you want to rebuild which houses were chosen.
+- Walk back from the end: if the value changed at this step, this house was taken.</p>
+<h3>Problem 4 - Minimum Number of Coins (<code>04_minimum_coins.py</code>)</h3>
+<p><strong>Statement.</strong> Given coin denominations (unlimited supply) and a target amount, return the fewest coins that add up to the amount, or -1 if impossible. Also report which coins are used.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">coins=[1, 5, 6, 9], amount=11 -&gt; 2 coins [5, 6]
+greedy on the same input gives [9, 1, 1]
+coins=[2], amount=3 -&gt; -1
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Amount 0 (0 coins); impossible amount; a coin larger than the amount; a single coin type; coin sets where greedy fails.</p>
+<p><strong>Hints.</strong>
+- <code>dp[a]</code> is the fewest coins for amount <code>a</code>; start with <code>dp[0] = 0</code> and everything else as unreachable.
+- For each amount try every coin that fits and keep the smallest <code>dp[a - coin] + 1</code>.
+- Store which coin gave the best value so you can rebuild the list afterwards.</p>
+<h3>Problem 5 - Coin Change - Number of Ways (<code>05_coin_change_ways.py</code>)</h3>
+<p><strong>Statement.</strong> Count how many different COMBINATIONS of coins sum to the amount (<code>1+2</code> and <code>2+1</code> are the same). Also count ORDERED sequences to see the difference.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">coins=[1, 2, 5], amount=5
+combinations: 4  ([1,1,1,1,1], [1,1,1,2], [1,2,2], [5])
+ordered sequences: 9
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Amount 0 has exactly 1 way; no coins; coin bigger than the amount; duplicates in the coin list.</p>
+<p><strong>Hints.</strong>
+- For combinations loop over coins on the OUTSIDE and amounts on the inside.
+- For ordered sequences swap the loops: amounts on the outside, coins inside.
+- Base case: one way to make amount 0 (use nothing).</p>
+<h3>Problem 6 - 0/1 Knapsack (<code>06_zero_one_knapsack.py</code>)</h3>
+<p><strong>Statement.</strong> Given items with weights and values and a bag of capacity <code>W</code>, choose a subset (each item whole or not at all) with total weight at most <code>W</code> and maximum total value. Report the value and the chosen items.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">weights [1, 3, 4, 5], values [1, 4, 5, 7], capacity 7
+best value: 9
+items taken (0-based): [1, 2]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Capacity 0; no items; an item heavier than the capacity; all items fit; equal value-to-weight ratios; zero-value items.</p>
+<p><strong>Hints.</strong>
+- <code>dp[i][w]</code> is the best value using the first <code>i</code> items with capacity <code>w</code>.
+- Either skip item <code>i</code> or, if it fits, take it and add its value to the best of the remaining capacity.
+- For the 1-D version loop the capacity from high to low so an item is not used twice.</p>
+<h3>Problem 7 - Longest Common Subsequence (<code>07_longest_common_subsequence.py</code>)</h3>
+<p><strong>Statement.</strong> Given two strings, find the length of their longest common subsequence (characters in both, in the same order, not necessarily adjacent) and return one such subsequence.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">a = &quot;ABCBDAB&quot;, b = &quot;BDCABA&quot;
+LCS length: 4
+one LCS: BCBA
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty strings; identical strings; no common characters; one string inside the other; repeated characters.</p>
+<p><strong>Hints.</strong>
+- <code>dp[i][j]</code> is the LCS length of the first <code>i</code> letters of <code>a</code> and the first <code>j</code> letters of <code>b</code>.
+- Matching letters extend the diagonal cell by one; otherwise take the larger of the cell above and the cell to the left.
+- Walk back from the bottom-right cell to rebuild one answer.</p>
+<h3>Problem 8 - Longest Increasing Subsequence (<code>08_longest_increasing_subsequence.py</code>)</h3>
+<p><strong>Statement.</strong> Given a list of integers, find the length of the longest strictly increasing subsequence and one such subsequence.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[10, 9, 2, 5, 3, 7, 101, 18]
+LIS length: 4, sequence: [2, 5, 7, 101]
+fast O(n log n) length: 4
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list (0); single element; strictly decreasing (answer 1); all equal (answer 1, increase must be strict); already sorted.</p>
+<p><strong>Hints.</strong>
+- <code>dp[i]</code> is the length of the best subsequence that ENDS at position <code>i</code>.
+- Look at every earlier smaller value and extend its best length by one.
+- Remember the previous index for each position so you can rebuild the sequence.</p>
+<h3>Problem 9 - Unique Paths in a Grid (<code>09_grid_unique_paths.py</code>)</h3>
+<p><strong>Statement.</strong> A robot starts at the top-left of an <code>m x n</code> grid and moves only right or down. Count the paths to the bottom-right. Cells marked 1 are obstacles. Also find the minimum-cost path when each cell has a cost.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">3x3 empty grid: 6
+7x3 empty grid: 28
+3x3 with centre obstacle: 2
+blocked start: 0
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> 1 x 1 grid; single row or column; blocked start or end; a wall that cuts the grid.</p>
+<p><strong>Hints.</strong>
+- A cell's count is the count above plus the count to its left; an obstacle cell is 0.
+- The first row and first column need care because they have only one neighbour.
+- For minimum cost add the cell's cost to the cheaper of the two neighbours.</p>
+<h3>Problem 10 - Subset Sum and Equal-Sum Partition (<code>10_subset_sum.py</code>)</h3>
+<p><strong>Statement.</strong> Given non-negative integers and a target, decide whether some subset adds up exactly to the target and return one such subset. Then test whether the list can be split into two parts with equal sums.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">numbers [3, 34, 4, 12, 5, 2], target 9 -&gt; subset [4, 5]
+target 30 -&gt; None
+partition [1, 5, 11, 5] -&gt; True
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Target 0 is always possible (empty subset); empty list; target larger than the total; a zero in the list; odd total for partition.</p>
+<p><strong>Hints.</strong>
+- <code>dp[i][s]</code> says whether the first <code>i</code> numbers can make sum <code>s</code>.
+- A sum is reachable if it was reachable without this number, or reachable at <code>s - number</code> before it.
+- For partition the total must be even; then ask for a subset with half the total.</p>
+<hr />
+<h2>F. Installation Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python version</td>
+<td>Python 3.8 or newer</td>
+</tr>
+<tr>
+<td>Packages</td>
+<td>None. Standard library only</td>
+</tr>
+<tr>
+<td>Extra installation</td>
+<td>Nothing to install beyond Python itself</td>
+</tr>
+</tbody>
+</table>
+<p>Check your installation with <code>python --version</code> (see section G).</p>
+<hr />
+<h2>G. How to Run the Files</h2>
+<ol>
+<li>Open a terminal: <strong>Windows</strong> - press <code>Win + R</code>, type <code>cmd</code> (or open PowerShell / VS Code terminal). <strong>Linux/macOS</strong> - open Terminal.</li>
+<li>Verify Python:
+   <code>bash
+   python --version      # Windows (or: py --version)
+   python3 --version     # Linux / macOS</code></li>
+<li>Move into the topic folder and run a file.</li>
+</ol>
+<p><strong>Windows</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice\17-Dynamic-Programming
+python 01_fibonacci_memo_tabulation.py
+</code></pre>
+<p>If <code>python</code> is not recognised, use the Python launcher: <code>py 01_fibonacci_memo_tabulation.py</code>.</p>
+<p><strong>Linux / macOS</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice/17-Dynamic-Programming
+python3 01_fibonacci_memo_tabulation.py
+</code></pre>
+<p>Every file is a standalone program: it needs no other file and no internet.</p>
+<hr />
+<h2>H. Revision Notes</h2>
+<p><strong>Key concepts</strong>
+- DP = overlapping subproblems + optimal substructure + a cache or table.
+- Top-down (memoization) is easier to write; bottom-up (tabulation) avoids recursion limits and allows space saving.
+- Always say in words what <code>dp[i]</code> or <code>dp[i][j]</code> means before writing code.
+- Greedy can fail where DP works (coins <code>[1, 5, 6, 9]</code>).
+- Loop order matters: combinations versus ordered sequences, and 0/1 knapsack versus unbounded coins.</p>
+<p><strong>Common mistakes</strong>
+- Wrong or missing base case (<code>dp[0]</code>).
+- Treating an unreachable state as 0 instead of "infinite" in minimum problems.
+- Iterating the 1-D knapsack capacity upward (item reused several times).
+- Swapping the coin and amount loops and counting the wrong thing.
+- Off-by-one between 0-based items and 1-based table rows.
+- Returning the table value but forgetting to backtrack when the actual items are asked for.</p>
+<p><strong>Interview tips</strong>
+- Start with the brute-force recursion, point out repeated work, then add the cache.
+- Give the state, transition and base case out loud before coding.
+- Mention the space-optimised version (two variables or one row) as a follow-up.
+- Know the standard pair: LIS in <code>O(n^2)</code> and in <code>O(n log n)</code>.
+- Say "pseudo-polynomial" when discussing knapsack and subset sum.</p>

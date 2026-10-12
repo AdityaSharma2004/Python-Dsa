@@ -1,0 +1,507 @@
+<h1>15 - Quick Sort</h1>
+<p>Learn quick sort, the partition-based divide and conquer sort. You will write both classic partition schemes, try different pivot rules, handle duplicates, and reuse the partition idea to find the k-th smallest element.</p>
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#a-topic-introduction">A. Topic Introduction</a></li>
+<li><a href="#b-core-concepts">B. Core Concepts</a></li>
+<li><a href="#c-how-it-works">C. How It Works</a></li>
+<li><a href="#d-time-and-space-complexity">D. Time and Space Complexity</a></li>
+<li><a href="#e-problems-for-practice">E. Problems for Practice</a></li>
+<li><a href="#f-installation-requirements">F. Installation Requirements</a></li>
+<li><a href="#g-how-to-run-the-files">G. How to Run the Files</a></li>
+<li><a href="#h-revision-notes">H. Revision Notes</a></li>
+</ul>
+<hr />
+<h2>A. Topic Introduction</h2>
+<p><strong>What it is.</strong> Quick sort is a divide and conquer sorting algorithm. It picks one element called the <strong>pivot</strong>, rearranges the list so smaller items sit on the left of the pivot and larger items on the right (this step is called <strong>partitioning</strong>), and then repeats the same idea on the left and right parts. It sorts in place, so it needs almost no extra memory.</p>
+<p><strong>Why it matters in DSA.</strong> Quick sort is the practical default behind many library sorts: it is very fast on average (<code>O(n log n)</code>), cache friendly, and the partition step is reused by other algorithms such as Quick Select (k-th smallest element). Interviewers love it because it tests recursion, pointer handling and worst-case reasoning together.</p>
+<p><strong>Where it is used.</strong> Sorting large in-memory arrays, finding medians and percentiles, top-k queries, and the introsort used inside C++ <code>std::sort</code>.</p>
+<p><strong>Everyday analogy.</strong> Sorting a pile of exam papers by marks: pick one paper, put everyone with lower marks on its left and higher marks on its right. That paper is now in its final place. Repeat for each pile.</p>
+<p>If you know Laravel: it is like splitting a collection with <code>partition()</code> around one value, then calling the same function on each half instead of calling <code>sortBy()</code>. Unlike merge sort, the hard work is done on the way down (partitioning), and nothing is merged on the way up.</p>
+<hr />
+<h2>B. Core Concepts</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pivot</td>
+<td>The element used to split the range into small and large parts.</td>
+</tr>
+<tr>
+<td>Partition</td>
+<td>Rearranging a range so that small items are left of the pivot and large items are right of it.</td>
+</tr>
+<tr>
+<td>Lomuto scheme</td>
+<td>One left-to-right scan with a boundary index; pivot is usually the last element. Simple to write.</td>
+</tr>
+<tr>
+<td>Hoare scheme</td>
+<td>Two pointers move toward each other and swap out-of-place pairs. Fewer swaps.</td>
+</tr>
+<tr>
+<td>Three-way partition</td>
+<td>Splits into smaller / equal / greater, so repeated values are not sorted again.</td>
+</tr>
+<tr>
+<td>Quick Select</td>
+<td>Partition and recurse into only ONE side to find the k-th smallest item.</td>
+</tr>
+<tr>
+<td>In-place</td>
+<td>Sorting inside the same list with only a few extra variables.</td>
+</tr>
+<tr>
+<td>Unstable</td>
+<td>Equal items may change their relative order.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Key idea.</strong> After one partition the pivot is already in its final sorted position. Only the two sides remain.</p>
+<p><strong>Shape of the recursion</strong></p>
+<pre><code class="language-text">                [ whole range ]
+                 /    pivot    \
+        [ smaller ]  p  [ larger ]
+          /   \              /   \
+       [..] p [..]       [..] p [..]
+</code></pre>
+<p><strong>Good pivot versus bad pivot</strong></p>
+<pre><code class="language-text">Balanced split  -&gt; depth about log n  -&gt; O(n log n)
+  n -&gt; n/2 + n/2 -&gt; n/4 ...
+
+Lopsided split  -&gt; depth about n      -&gt; O(n^2)
+  n -&gt; (n-1) + 0 -&gt; (n-2) + 0 ...   (last element pivot on sorted input)
+</code></pre>
+<p><strong>Flow of the algorithm</strong></p>
+<pre><code class="language-mermaid">flowchart TD
+    A[&quot;quick_sort(low, high)&quot;] --&gt; B{&quot;low &lt; high ?&quot;}
+    B -- no --&gt; Z[&quot;return (0 or 1 item is sorted)&quot;]
+    B -- yes --&gt; C[&quot;partition: place pivot, get index p&quot;]
+    C --&gt; D[&quot;quick_sort(low, p - 1)&quot;]
+    C --&gt; E[&quot;quick_sort(p + 1, high)&quot;]
+</code></pre>
+<hr />
+<h2>C. How It Works</h2>
+<p><strong>Dry run 1: Lomuto partition of <code>[9, 4, 7, 3, 10, 5]</code></strong> (pivot = last = 5, <code>i</code> = end of the "small" zone, starts at -1)</p>
+<table>
+<thead>
+<tr>
+<th>j</th>
+<th>arr[j]</th>
+<th>arr[j] &lt;= 5 ?</th>
+<th>action</th>
+<th>list after</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>9</td>
+<td>no</td>
+<td>nothing</td>
+<td><code>[9, 4, 7, 3, 10, 5]</code></td>
+</tr>
+<tr>
+<td>1</td>
+<td>4</td>
+<td>yes</td>
+<td>i = 0, swap positions 0 and 1</td>
+<td><code>[4, 9, 7, 3, 10, 5]</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>7</td>
+<td>no</td>
+<td>nothing</td>
+<td><code>[4, 9, 7, 3, 10, 5]</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>3</td>
+<td>yes</td>
+<td>i = 1, swap positions 1 and 3</td>
+<td><code>[4, 3, 7, 9, 10, 5]</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>10</td>
+<td>no</td>
+<td>nothing</td>
+<td><code>[4, 3, 7, 9, 10, 5]</code></td>
+</tr>
+<tr>
+<td>end</td>
+<td>-</td>
+<td>-</td>
+<td>swap pivot into position i + 1 = 2</td>
+<td><code>[4, 3, 5, 9, 10, 7]</code></td>
+</tr>
+</tbody>
+</table>
+<p>The pivot 5 is now at index 2. Everything left is <code>&lt;= 5</code>, everything right is <code>&gt; 5</code>. Return 2.</p>
+<p><strong>Dry run 2: Hoare partition of <code>[5, 3, 8, 4, 2, 7, 1, 10]</code></strong> (pivot = first = 5)</p>
+<pre><code class="language-text">left pointer stops at 5 (&gt;= pivot), right pointer stops at 1 (&lt;= pivot) -&gt; swap
+[1, 3, 8, 4, 2, 7, 5, 10]
+left stops at 8, right stops at 2 -&gt; swap
+[1, 3, 2, 4, 8, 7, 5, 10]
+left stops at 8 (index 4), right stops at 4 (index 3): pointers crossed -&gt; return 3
+</code></pre>
+<p>Left part <code>[1, 3, 2, 4]</code> is all <code>&lt;= 5</code>, right part <code>[8, 7, 5, 10]</code> is all <code>&gt;= 5</code>. Note that with Hoare the pivot is not necessarily at the split position; the two parts are simply sorted separately.</p>
+<p><strong>Dry run 3: full quick sort of <code>[10, 7, 8, 9, 1, 5]</code></strong> (Lomuto, last pivot)</p>
+<pre><code class="language-text">[10, 7, 8, 9, 1, 5]   pivot 5 -&gt; [1, 5, 8, 9, 10, 7]   5 is final (index 1)
+   left  [1]                     sorted
+   right [8, 9, 10, 7] pivot 7 -&gt; [7, 9, 10, 8]         7 is final
+        right [9, 10, 8] pivot 8 -&gt; [8, 10, 9]          8 is final
+             right [10, 9] pivot 9 -&gt; [9, 10]           done
+result: [1, 5, 7, 8, 9, 10]
+</code></pre>
+<p><strong>Dry run 4: why a sorted list hurts a last-element pivot</strong></p>
+<p><code>[1, 2, 3, 4, 5]</code> with pivot 5: every other value is smaller, so the pivot stays at the end and the split is <code>4 + 0</code>. Next round the split is <code>3 + 0</code>, and so on. That makes <code>n + (n-1) + ... + 1</code> comparisons, which is <code>O(n^2)</code>. Random or median-of-three pivots break this pattern.</p>
+<hr />
+<h2>D. Time and Space Complexity</h2>
+<table>
+<thead>
+<tr>
+<th>Variant</th>
+<th>Best</th>
+<th>Average</th>
+<th>Worst</th>
+<th>Extra space</th>
+<th>Stable?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Quick sort (Lomuto or Hoare)</td>
+<td>O(n log n)</td>
+<td>O(n log n)</td>
+<td>O(n^2)</td>
+<td>O(log n) average stack, O(n) worst</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Randomized pivot</td>
+<td>O(n log n)</td>
+<td>O(n log n) expected</td>
+<td>O(n^2), extremely unlikely</td>
+<td>O(log n) expected</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Three-way partition</td>
+<td>O(n) with few distinct values</td>
+<td>O(n log n)</td>
+<td>O(n^2)</td>
+<td>O(log n)</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Iterative with explicit stack (smaller side first)</td>
+<td>O(n log n)</td>
+<td>O(n log n)</td>
+<td>O(n^2)</td>
+<td>O(log n)</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Quick Select</td>
+<td>O(n)</td>
+<td>O(n)</td>
+<td>O(n^2)</td>
+<td>O(1) iterative</td>
+<td>-</td>
+</tr>
+<tr>
+<td>One partition pass</td>
+<td>O(n)</td>
+<td>O(n)</td>
+<td>O(n)</td>
+<td>O(1)</td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why the average is <code>O(n log n)</code>.</strong> A balanced split halves the range, so there are about <code>log n</code> levels and each level partitions about <code>n</code> items in total.</p>
+<p><strong>Why the worst case is <code>O(n^2)</code>.</strong> If each pivot is the smallest or largest value, one level only removes a single item, giving <code>n</code> levels of up to <code>n</code> work.</p>
+<p><strong>Compared with Selection Sort</strong> (file 10): selection sort always makes <code>n(n-1)/2</code> comparisons, so doubling <code>n</code> makes it about 4 times slower. Quick sort grows by only a little over 2 times when <code>n</code> doubles.</p>
+<hr />
+<h2>E. Problems for Practice</h2>
+<table>
+<thead>
+<tr>
+<th>No</th>
+<th>Title</th>
+<th>Difficulty</th>
+<th>Concept</th>
+<th>Python File</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Lomuto Partition</td>
+<td>Easy</td>
+<td>Partition step with a boundary index</td>
+<td><code>01_lomuto_partition.py</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Quick Sort with Lomuto Partition</td>
+<td>Easy</td>
+<td>Recursive quick sort, in place</td>
+<td><code>02_quick_sort_lomuto.py</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Hoare Partition</td>
+<td>Easy</td>
+<td>Two pointers moving toward each other</td>
+<td><code>03_hoare_partition.py</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Quick Sort with Hoare Partition</td>
+<td>Easy</td>
+<td>Quick sort using Hoare, swap counting</td>
+<td><code>04_quick_sort_hoare.py</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Pivot Selection Strategies</td>
+<td>Medium</td>
+<td>First, last and median-of-three pivots</td>
+<td><code>05_pivot_selection_strategies.py</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Randomized Quick Sort</td>
+<td>Medium</td>
+<td>Random pivot beats sorted input</td>
+<td><code>06_randomized_quick_sort.py</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Three-Way Quick Sort</td>
+<td>Medium</td>
+<td>Smaller / equal / greater partition for duplicates</td>
+<td><code>07_three_way_quick_sort.py</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>Quick Select (k-th Smallest)</td>
+<td>Medium</td>
+<td>Partition and recurse on one side only</td>
+<td><code>08_quick_select.py</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>Iterative Quick Sort</td>
+<td>Medium</td>
+<td>Explicit stack instead of recursion</td>
+<td><code>09_iterative_quick_sort.py</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>Quick Sort vs Selection Sort</td>
+<td>Medium</td>
+<td>Measuring growth of comparisons</td>
+<td><code>10_quick_sort_vs_selection_sort.py</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Problem 1 - Lomuto Partition (<code>01_lomuto_partition.py</code>)</h3>
+<p><strong>Statement.</strong> Choose the last element as the pivot and rearrange the list in place so everything smaller than or equal to the pivot is on its left and everything larger is on its right. Return the final index of the pivot.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[9, 4, 7, 3, 10, 5] -&gt; [4, 3, 5, 9, 10, 7], pivot index = 2
+[5, 4, 3, 2, 1]    -&gt; [1, 4, 3, 2, 5], pivot index = 0
+[4, 4, 4, 4]       -&gt; [4, 4, 4, 4], pivot index = 3
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Single element; pivot is the largest (stays last); pivot is the smallest (moves to the front); many duplicates of the pivot.</p>
+<p><strong>Hints.</strong>
+- Keep one index that marks where the small zone ends; start it just before the range.
+- Scan once; whenever an item is <code>&lt;=</code> pivot, grow the small zone and swap the item into it.
+- At the end, swap the pivot into the slot right after the small zone and return that slot.</p>
+<h3>Problem 2 - Quick Sort with Lomuto Partition (<code>02_quick_sort_lomuto.py</code>)</h3>
+<p><strong>Statement.</strong> Sort a list of integers in ascending order, in place, using quick sort with the Lomuto partition. Do not use <code>sorted()</code> or <code>list.sort()</code>.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[10, 7, 8, 9, 1, 5] -&gt; [1, 5, 7, 8, 9, 10]
+[4, -1, 4, 0, -1, 9, 2] -&gt; [-1, -1, 0, 2, 4, 4, 9]
+[] -&gt; []
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list; single element; already sorted (quadratic with a last-element pivot); reverse sorted; all equal; negative numbers.</p>
+<p><strong>Hints.</strong>
+- Recursive function takes <code>low</code> and <code>high</code>; stop when <code>low &gt;= high</code>.
+- Partition first, then sort the part before the pivot and the part after it.
+- Never include the pivot index in either recursive call.</p>
+<h3>Problem 3 - Hoare Partition (<code>03_hoare_partition.py</code>)</h3>
+<p><strong>Statement.</strong> Implement Hoare's partition: use the first element as pivot and move two pointers toward each other, swapping out-of-place pairs, until they cross. Return the split index <code>j</code> so that every item up to <code>j</code> is <code>&lt;=</code> pivot and every item after <code>j</code> is <code>&gt;=</code> pivot.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[5, 3, 8, 4, 2, 7, 1, 10] -&gt; [1, 3, 2, 4, 8, 7, 5, 10], split after index 3
+[2, 1] -&gt; [1, 2], split after index 0
+[3, 3, 3, 3] -&gt; [3, 3, 3, 3], split after index 1
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Two elements; all elements equal (both pointers stop at every item and meet in the middle); already sorted; pivot is the largest value.</p>
+<p><strong>Hints.</strong>
+- Left pointer moves right while the item is smaller than the pivot; right pointer moves left while the item is larger.
+- Both pointers stop on equal values; this keeps the split balanced for duplicates.
+- When the pointers meet or cross, return the right pointer; otherwise swap and continue.</p>
+<h3>Problem 4 - Quick Sort with Hoare Partition (<code>04_quick_sort_hoare.py</code>)</h3>
+<p><strong>Statement.</strong> Sort a list in place using quick sort built on Hoare's partition. Compare the number of swaps with the Lomuto version on the same data.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[29, 10, 14, 37, 13, 5, 21, 8] -&gt; [5, 8, 10, 13, 14, 21, 29, 37]  hoare swaps=8, lomuto swaps=9
+[9, 8, 7, 6, 5, 4, 3, 2, 1] -&gt; sorted  hoare swaps=4, lomuto swaps=24
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list; single element; two elements; all equal elements; duplicates.</p>
+<p><strong>Hints.</strong>
+- With Hoare the recursion is on <code>low..j</code> and <code>j+1..high</code> (the pivot is not excluded).
+- Count a swap each time two items are exchanged, in both versions.
+- Hoare usually swaps fewer items than Lomuto, especially on reversed data.</p>
+<h3>Problem 5 - Pivot Selection Strategies (<code>05_pivot_selection_strategies.py</code>)</h3>
+<p><strong>Statement.</strong> Implement quick sort with three pivot rules (first element, last element, median of three) and compare their comparison counts on random, ascending and descending data of the same size.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">n = 200 comparisons
+input       first   last  median3
+random       1661   1518    1380
+ascending   19900  19900    1153
+descending  19900  19900    1786
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Ranges with 1 or 2 elements; all equal elements; pivot already at the end. Keep input small so the lopsided case stays within Python's recursion limit.</p>
+<p><strong>Hints.</strong>
+- Median of three means the middle value among first, middle and last items.
+- Move the chosen pivot to the position your partition expects (for Lomuto, the end) before partitioning.
+- Count one comparison for every item compared with the pivot.</p>
+<h3>Problem 6 - Randomized Quick Sort (<code>06_randomized_quick_sort.py</code>)</h3>
+<p><strong>Statement.</strong> Sort a list in place with quick sort that chooses its pivot at random. Show it handles sorted and reverse-sorted data without the <code>O(n^2)</code> slowdown of a fixed last-element pivot by comparing the deepest recursion level.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Deepest recursion level
+input        fixed pivot  random pivot
+ascending            399            17
+descending           399            17
+[9, 3, 7, 3, 1, 8, 2] -&gt; [1, 2, 3, 3, 7, 8, 9]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list; one element; all equal elements (still quadratic with plain Lomuto, see problem 7); already sorted; reversed. Use a seeded generator so output is repeatable.</p>
+<p><strong>Hints.</strong>
+- Pick a random index in the range, swap that item to the pivot position, then run the usual partition.
+- Track recursion depth with an extra argument to see the balance.
+- Seed the random generator so each run prints the same result.</p>
+<h3>Problem 7 - Three-Way Quick Sort (<code>07_three_way_quick_sort.py</code>)</h3>
+<p><strong>Statement.</strong> Sort a list with many repeated values in place using three-way partitioning (smaller than, equal to, greater than the pivot). Compare its comparison count with the plain Lomuto version.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[4, 9, 4, 4, 1, 9, 4, 4, 1, 4] -&gt; [1, 1, 4, 4, 4, 4, 4, 4, 9, 9]
+few distinct: three-way=297, lomuto=3923
+all equal   : three-way=149, lomuto=11175
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list; single element; all equal (one pass, no deeper recursion); only two distinct values; already sorted.</p>
+<p><strong>Hints.</strong>
+- Keep three pointers: end of the smaller zone, current item, start of the greater zone.
+- Equal items are simply skipped over; they never move again.
+- Recurse only on the smaller and greater zones, never on the equal zone.</p>
+<h3>Problem 8 - Quick Select (k-th Smallest) (<code>08_quick_select.py</code>)</h3>
+<p><strong>Statement.</strong> Find the k-th smallest element of an unsorted list (<code>k = 1</code> is the minimum) without sorting the whole list, by reusing the partition step and continuing into only one side.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[7, 10, 4, 3, 20, 15]
+k=1 -&gt; 3
+k=3 -&gt; 7
+k=6 -&gt; 20
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> <code>k &lt; 1</code> or <code>k &gt; n</code> raises <code>ValueError</code>; empty list raises <code>ValueError</code>; duplicates count separately; single element.</p>
+<p><strong>Hints.</strong>
+- After partitioning, compare the pivot's final index with <code>k - 1</code>.
+- If equal, you are done; if <code>k - 1</code> is smaller go left, otherwise go right.
+- Work on a copy so the caller's list is not rearranged.</p>
+<h3>Problem 9 - Iterative Quick Sort (<code>09_iterative_quick_sort.py</code>)</h3>
+<p><strong>Statement.</strong> Sort a list in place with quick sort without recursion: keep pending <code>(low, high)</code> ranges on a stack you manage yourself. Process the smaller side first so the stack never holds more than <code>O(log n)</code> ranges.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[10, 7, 8, 9, 1, 5, 3, 6] -&gt; [1, 3, 5, 6, 7, 8, 9, 10] (max stack size 3)
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list; single element; sorted and reverse-sorted data; duplicates; ranges of size 0 or 1 are skipped.</p>
+<p><strong>Hints.</strong>
+- Push the whole range, then loop while the stack is not empty.
+- After partitioning, push the larger side first and the smaller side last so the smaller side is popped next.
+- Skip ranges with fewer than two items instead of pushing them.</p>
+<h3>Problem 10 - Quick Sort vs Selection Sort (<code>10_quick_sort_vs_selection_sort.py</code>)</h3>
+<p><strong>Statement.</strong> Count the comparisons made by Selection Sort (always <code>n(n-1)/2</code>) and by quick sort with a median-of-three pivot for growing input sizes, and show how the gap widens when <code>n</code> doubles. Use a hand-written deterministic data generator.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">   n  selection  quick  ratio
+  50       1225    212    5.8
+ 100       4950    550    9.0
+ 200      19900   1329   15.0
+growth when n doubles: selection about x4, quick about x2.5
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list (zero comparisons); single element; all equal values (quick sort degrades toward <code>O(n^2)</code> here).</p>
+<p><strong>Hints.</strong>
+- Selection sort finds the smallest of the remaining items each round; count every comparison.
+- Use a simple formula-based generator (for example a linear congruential one) so the data is identical on every run.
+- Divide the two counts to print the ratio and compare the count at <code>n</code> with the count at <code>n / 2</code>.</p>
+<hr />
+<h2>F. Installation Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python version</td>
+<td>Python 3.8 or newer</td>
+</tr>
+<tr>
+<td>Packages</td>
+<td>None. Standard library only</td>
+</tr>
+<tr>
+<td>Extra installation</td>
+<td>Nothing to install beyond Python itself</td>
+</tr>
+</tbody>
+</table>
+<p>Check your installation with <code>python --version</code> (see section G).</p>
+<hr />
+<h2>G. How to Run the Files</h2>
+<ol>
+<li>Open a terminal: <strong>Windows</strong> - press <code>Win + R</code>, type <code>cmd</code> (or open PowerShell / VS Code terminal). <strong>Linux/macOS</strong> - open Terminal.</li>
+<li>Verify Python:
+   <code>bash
+   python --version      # Windows (or: py --version)
+   python3 --version     # Linux / macOS</code></li>
+<li>Move into the topic folder and run a file.</li>
+</ol>
+<p><strong>Windows</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice\15-Quick-Sort
+python 01_lomuto_partition.py
+</code></pre>
+<p>If <code>python</code> is not recognised, use the Python launcher: <code>py 01_lomuto_partition.py</code>.</p>
+<p><strong>Linux / macOS</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice/15-Quick-Sort
+python3 01_lomuto_partition.py
+</code></pre>
+<p>Every file is a standalone program: it needs no other file and no internet.</p>
+<hr />
+<h2>H. Revision Notes</h2>
+<p><strong>Key concepts</strong>
+- Partition places the pivot in its final position; recursion handles both sides.
+- Lomuto: one scan, simple, more swaps. Hoare: two pointers, fewer swaps, careful with the returned index.
+- Pivot choice decides the speed: balanced splits give <code>O(n log n)</code>, lopsided ones give <code>O(n^2)</code>.
+- Randomized, median-of-three and three-way versions fix the common bad inputs.
+- Quick Select reuses partition to find the k-th item in average <code>O(n)</code>.
+- Quick sort is in place but not stable.</p>
+<p><strong>Common mistakes</strong>
+- Including the pivot again in a recursive call (infinite recursion or wrong result).
+- Mixing up the Lomuto and Hoare return values and recursion ranges.
+- Using a plain last-element pivot on sorted data and hitting <code>O(n^2)</code> and the recursion limit.
+- Forgetting that all-equal data is bad for two-way partitioning.
+- Off-by-one on the boundary index (<code>i</code> starts at <code>low - 1</code>, pivot goes to <code>i + 1</code>).
+- Using <code>sorted()</code> inside the algorithm instead of writing the partition.</p>
+<p><strong>Interview tips</strong>
+- State the pivot rule first, then give average and worst case with the reason.
+- Mention space: in place, but recursion stack is <code>O(log n)</code> average and <code>O(n)</code> worst; recurse on the smaller side to cap it.
+- Know when to prefer merge sort: need stability or guaranteed <code>O(n log n)</code>.
+- For "k-th largest" questions say Quick Select first (average <code>O(n)</code>), then mention a heap as the safe alternative.
+- Be ready to write the Lomuto partition from memory in under two minutes.</p>

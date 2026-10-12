@@ -1,0 +1,446 @@
+<h1>12 - Selection Sort</h1>
+<p>Learn the sort that repeatedly selects the smallest remaining value and places it at the front. It does very few swaps, which makes it a good lesson in "what exactly are we optimising?". Ten programs cover the basic algorithm, tracing, counting, stability, k-smallest and a comparison with other sorts.</p>
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#a-topic-introduction">A. Topic Introduction</a></li>
+<li><a href="#b-core-concepts">B. Core Concepts</a></li>
+<li><a href="#c-how-it-works">C. How It Works</a></li>
+<li><a href="#d-time-and-space-complexity">D. Time and Space Complexity</a></li>
+<li><a href="#e-problems-for-practice">E. Problems for Practice</a></li>
+<li><a href="#f-installation-requirements">F. Installation Requirements</a></li>
+<li><a href="#g-how-to-run-the-files">G. How to Run the Files</a></li>
+<li><a href="#h-revision-notes">H. Revision Notes</a></li>
+</ul>
+<hr />
+<h2>A. Topic Introduction</h2>
+<p><strong>What it is.</strong> Selection Sort splits the list into a sorted left part and an unsorted right part. In each pass it scans the unsorted part to find the smallest value and swaps it into the first unsorted position. The sorted part grows by one item per pass.</p>
+<p><strong>Why it matters in DSA.</strong> It shows the "find then place" pattern, the difference between comparisons and swaps (comparisons are always <code>n(n-1)/2</code>, swaps are at most <code>n - 1</code>), and the idea of an unstable sort.</p>
+<p><strong>Where it is used.</strong> Teaching, tiny lists, and situations where writing to memory is expensive (for example flash memory), because it performs the fewest swaps of the simple sorts.</p>
+<p><strong>Everyday analogy.</strong> Picking cards from a table: you look at all the remaining cards, pick the lowest, put it in your hand to the right of the previous one, and repeat.</p>
+<p>If you know Laravel: it is like calling <code>$collection-&gt;min()</code> over the remaining items again and again and appending the result to a new list.</p>
+<hr />
+<h2>B. Core Concepts</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sorted part</td>
+<td>Left side, already in final position.</td>
+</tr>
+<tr>
+<td>Unsorted part</td>
+<td>Right side, still to be processed.</td>
+</tr>
+<tr>
+<td>Selection</td>
+<td>Finding the index of the minimum (or maximum) in the unsorted part.</td>
+</tr>
+<tr>
+<td>Swap</td>
+<td>Exchanging the selected item with the first unsorted item.</td>
+</tr>
+<tr>
+<td>Stable sort</td>
+<td>Equal items keep their original relative order.</td>
+</tr>
+<tr>
+<td>Bidirectional (cocktail) selection</td>
+<td>Selecting minimum and maximum in one scan.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Picture for <code>[29, 10, 14, 37, 13]</code></strong> (the part before <code>|</code> is final)</p>
+<pre><code class="language-text">start  : | 29 10 14 37 13
+pass 1 : 10 | 29 14 37 13      min=10, swap index 0 &lt;-&gt; 1
+pass 2 : 10 13 | 14 37 29      min=13, swap index 1 &lt;-&gt; 4
+pass 3 : 10 13 14 | 37 29      min=14, already in place
+pass 4 : 10 13 14 29 | 37      min=29, swap index 3 &lt;-&gt; 4
+</code></pre>
+<p><strong>Control flow</strong></p>
+<pre><code class="language-mermaid">flowchart TD
+    A[position = 0] --&gt; B[assume min is at position]
+    B --&gt; C[scan the rest for a smaller value]
+    C --&gt; D[swap min into position]
+    D --&gt; E{position at last but one?}
+    E -- no --&gt; F[position + 1] --&gt; B
+    E -- yes --&gt; G[Done]
+</code></pre>
+<hr />
+<h2>C. How It Works</h2>
+<p><strong>Dry run on <code>[29, 10, 14, 37, 13]</code></strong></p>
+<table>
+<thead>
+<tr>
+<th>Pass</th>
+<th>Unsorted part</th>
+<th>Minimum found</th>
+<th>Swap</th>
+<th>List afterwards</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>29 10 14 37 13</td>
+<td>10 at index 1</td>
+<td>index 0 and 1</td>
+<td>10 29 14 37 13</td>
+</tr>
+<tr>
+<td>2</td>
+<td>29 14 37 13</td>
+<td>13 at index 4</td>
+<td>index 1 and 4</td>
+<td>10 13 14 37 29</td>
+</tr>
+<tr>
+<td>3</td>
+<td>14 37 29</td>
+<td>14 at index 2</td>
+<td>none</td>
+<td>10 13 14 37 29</td>
+</tr>
+<tr>
+<td>4</td>
+<td>37 29</td>
+<td>29 at index 4</td>
+<td>index 3 and 4</td>
+<td>10 13 14 29 37</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why it is not stable.</strong> A long-distance swap can jump an item over an equal one. With <code>[A70, R70, M40]</code> the first swap puts <code>M40</code> first and <code>A70</code> at the end, after <code>R70</code>. A stable version shifts items one place right instead of swapping.</p>
+<p><strong>Why swaps stay small.</strong> Each pass does at most one swap, so there are at most <code>n - 1</code> swaps, even for a reversed list (<code>n // 2</code>).</p>
+<p><strong>Bidirectional idea.</strong> Each pass picks the minimum and maximum together and places them at both ends, so only about <code>n / 2</code> passes are needed (the comparison count stays the same order).</p>
+<hr />
+<h2>D. Time and Space Complexity</h2>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>Time</th>
+<th>Space</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Best (already sorted)</td>
+<td>O(n^2)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>Average</td>
+<td>O(n^2)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>Worst (reversed)</td>
+<td>O(n^2)</td>
+<td>O(1)</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Fact</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Comparisons</td>
+<td>Always <code>n(n-1)/2</code></td>
+</tr>
+<tr>
+<td>Swaps</td>
+<td>At most <code>n - 1</code></td>
+</tr>
+<tr>
+<td>Stable?</td>
+<td>No (swap version); yes if you shift instead of swapping</td>
+</tr>
+<tr>
+<td>In-place?</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>k smallest items</td>
+<td><code>O(n * k)</code> using only k passes</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>E. Problems for Practice</h2>
+<table>
+<thead>
+<tr>
+<th>No</th>
+<th>Title</th>
+<th>Difficulty</th>
+<th>Concept</th>
+<th>Python File</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Basic Selection Sort</td>
+<td>Easy</td>
+<td>Select minimum, swap into place</td>
+<td><code>01_basic_selection_sort.py</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Descending Selection Sort</td>
+<td>Easy</td>
+<td>Select the maximum instead</td>
+<td><code>02_descending_selection_sort.py</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Find Min and Max Manually</td>
+<td>Easy</td>
+<td>The selection step on its own</td>
+<td><code>03_find_min_and_max_manually.py</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Pass-by-Pass Trace</td>
+<td>Easy</td>
+<td>Showing the chosen index and the swap</td>
+<td><code>04_pass_by_pass_trace.py</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Swap Counting</td>
+<td>Medium</td>
+<td>Swaps versus comparisons</td>
+<td><code>05_swap_counting.py</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Sort and Group Duplicates</td>
+<td>Medium</td>
+<td>Sort, then count equal runs</td>
+<td><code>06_sort_and_group_duplicates.py</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Stability Check</td>
+<td>Medium</td>
+<td>Unstable swap versus stable shift</td>
+<td><code>07_stability_check.py</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>K Smallest Elements</td>
+<td>Medium</td>
+<td>Running only k passes</td>
+<td><code>08_k_smallest_elements.py</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>Bidirectional Selection Sort</td>
+<td>Medium</td>
+<td>Min and max in one pass</td>
+<td><code>09_bidirectional_selection_sort.py</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>Compare with Other Sorts</td>
+<td>Medium</td>
+<td>Selection vs Bubble vs Insertion counts</td>
+<td><code>10_compare_with_other_sorts.py</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Problem 1 - Basic Selection Sort (<code>01_basic_selection_sort.py</code>)</h3>
+<p><strong>Statement.</strong> Sort a list of integers in ascending order using Selection Sort. Do not use <code>sorted()</code>, <code>list.sort()</code> or <code>min()</code>.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Before: [64, 25, 12, 22, 11]
+After:  [11, 12, 22, 25, 64]
+Negatives: [-5, -1, 0, 3]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty and single-element lists; sorted input still costs <code>O(n^2)</code> comparisons; duplicates and negatives work unchanged.</p>
+<p><strong>Hints.</strong>
+- Outer loop picks the position to fill; inner loop starts one past it.
+- Remember the index of the smallest value seen, not the value.
+- Swap once at the end of each pass.</p>
+<h3>Problem 2 - Descending Selection Sort (<code>02_descending_selection_sort.py</code>)</h3>
+<p><strong>Statement.</strong> Sort from largest to smallest by selecting the maximum of the unsorted part in each pass.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Before: [29, 10, 14, 37, 13]
+After:  [37, 29, 14, 13, 10]
+Duplicates: [5, 5, 2, 2, 1]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty and single-element lists; duplicates are all kept; already descending input needs zero swaps.</p>
+<p><strong>Hints.</strong>
+- Change only the comparison direction of the scan.
+- Skip the swap when the chosen index equals the current position.
+- Think of "largest first" as "smallest of the negated values".</p>
+<h3>Problem 3 - Find Min and Max Manually (<code>03_find_min_and_max_manually.py</code>)</h3>
+<p><strong>Statement.</strong> Without <code>min()</code> or <code>max()</code>, find the value and index of both the smallest and the largest element in a single pass. This is the selection step Selection Sort repeats.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">List: [27, 8, 41, 8, 41, 3]
+Smallest: 3 at index 5
+Largest : 41 at index 2
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> An empty list raises <code>ValueError</code>; a single element has min and max at index 0; ties keep the first occurrence.</p>
+<p><strong>Hints.</strong>
+- Start both candidates at index 0.
+- Update the minimum only for a strictly smaller value, and the maximum only for a strictly larger one.
+- Raise the error before touching the list when it is empty.</p>
+<h3>Problem 4 - Pass-by-Pass Trace (<code>04_pass_by_pass_trace.py</code>)</h3>
+<p><strong>Statement.</strong> Print, for every pass, which index was chosen as the minimum, what was swapped and how the list looks afterwards. Mark the sorted part with a bar <code>|</code>.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Start : | 29 10 14 37 13
+Pass 1: min=10 (swap index 0 &lt;-&gt; 1) -&gt; 10 | 29 14 37 13
+Pass 3: min=14 (no swap needed) -&gt; 10 13 14 | 37 29
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Sorted input reports "no swap needed" in every pass; empty or single element has no passes; with duplicates the first smallest occurrence is chosen.</p>
+<p><strong>Hints.</strong>
+- Build each line as a string before printing (or return a list of lines).
+- Insert the bar after the first <code>position + 1</code> items.
+- Compare the chosen index with the current position to decide the "no swap" message.</p>
+<h3>Problem 5 - Swap Counting (<code>05_swap_counting.py</code>)</h3>
+<p><strong>Statement.</strong> Count swaps and comparisons on different inputs and show that swaps never exceed <code>n - 1</code> while comparisons are always <code>n(n-1)/2</code>.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">sorted    comparisons=15 swaps=0
+reversed  comparisons=15 swaps=3
+shuffled  comparisons=15 swaps=3
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Sorted input has 0 swaps but full comparisons; empty or single element gives <code>(0, 0)</code>; a reversed list needs <code>n // 2</code> swaps because each swap fixes two positions.</p>
+<p><strong>Hints.</strong>
+- Count a comparison in the inner loop and a swap only when the indices differ.
+- Return both counters with the sorted list.
+- Compare the comparison count with the formula for several sizes.</p>
+<h3>Problem 6 - Sort and Group Duplicates (<code>06_sort_and_group_duplicates.py</code>)</h3>
+<p><strong>Statement.</strong> Sort a list with many repeated values, then walk through it once and report every distinct value with how many times it occurs.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Original: [4, 2, 4, 1, 2, 4, 3, 1]
+Sorted:   [1, 1, 2, 2, 3, 4, 4, 4]
+Value 4 appears 3 time(s)
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list gives no groups; all equal gives one group; all distinct gives <code>n</code> groups of size 1.</p>
+<p><strong>Hints.</strong>
+- After sorting, equal values are neighbours.
+- Keep the current value and a running count; when the value changes, store the group and restart.
+- Do not forget to store the last group after the loop ends.</p>
+<h3>Problem 7 - Stability Check (<code>07_stability_check.py</code>)</h3>
+<p><strong>Statement.</strong> Sort <code>(name, marks)</code> records by marks. Show that the swap-based Selection Sort can reorder students with equal marks, then write a stable version that keeps their original order.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">records = [(&quot;Asha&quot;, 70), (&quot;Ravi&quot;, 70), (&quot;Meena&quot;, 40), (&quot;Karan&quot;, 90)]
+Standard: ['Meena', 'Ravi', 'Asha', 'Karan'] stable? False
+Shifting: ['Meena', 'Asha', 'Ravi', 'Karan'] stable? True
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list and single record; all marks equal must leave the order unchanged; already sorted records.</p>
+<p><strong>Hints.</strong>
+- The stable version removes the minimum by shifting the items between the two positions one step right.
+- Insert the chosen record at the front of the unsorted part.
+- Keep the scan strict (<code>&lt;</code>) so the earliest of equal minima wins.</p>
+<h3>Problem 8 - K Smallest Elements (<code>08_k_smallest_elements.py</code>)</h3>
+<p><strong>Statement.</strong> Return the <code>k</code> smallest values in ascending order by running only the first <code>k</code> passes of Selection Sort. The rest of the list need not be sorted.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Numbers: [64, 25, 12, 22, 11, 90, 3]
+3 smallest: [3, 11, 12]
+k = 0: []
+k &gt; length: [2, 5, 8]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> <code>k = 0</code> returns an empty list; <code>k</code> larger than the length returns the fully sorted list; negative <code>k</code> raises <code>ValueError</code>; duplicates count separately.</p>
+<p><strong>Hints.</strong>
+- Limit the outer loop to <code>k</code> passes (and to the list length).
+- Work on a copy and return the first <code>k</code> items.
+- Validate <code>k</code> before sorting anything.</p>
+<h3>Problem 9 - Bidirectional Selection Sort (<code>09_bidirectional_selection_sort.py</code>)</h3>
+<p><strong>Statement.</strong> In each pass select both the minimum and the maximum of the unsorted middle part and place them at the left and right ends. This halves the number of passes.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Before: [29, 10, 14, 37, 13, 5, 21]
+After:  [5, 10, 13, 14, 21, 29, 37]
+Max at left: [1, 2, 3, 9]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty and single-element lists; the maximum sitting at the left boundary (its index changes after the first swap); all values equal; odd and even lengths.</p>
+<p><strong>Hints.</strong>
+- Keep a <code>left</code> and a <code>right</code> boundary and shrink both after each pass.
+- After swapping the minimum to <code>left</code>, check whether the maximum was at <code>left</code>; if so it has moved to the old minimum index.
+- Stop when <code>left</code> meets <code>right</code>.</p>
+<h3>Problem 10 - Compare with Other Sorts (<code>10_compare_with_other_sorts.py</code>)</h3>
+<p><strong>Statement.</strong> Implement Selection, Bubble (with early exit) and Insertion Sort with counters and compare their comparisons and writes on sorted, reversed and shuffled lists of the same size.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Reversed: [8, 7, 6, 5, 4, 3, 2, 1]
+  Selection  comparisons=28 writes= 8
+  Bubble     comparisons=28 writes=56
+  Insertion  comparisons=28 writes=35
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty and single-element lists have zero comparisons; reversed input is the worst case for Bubble and Insertion; sorted input is the best case for those two, but not for Selection.</p>
+<p><strong>Hints.</strong>
+- Define one "write" as one assignment into the list (a swap counts as two).
+- Use the same fixed input lists for every algorithm.
+- Verify each result against a reference sort only in a final check.</p>
+<hr />
+<h2>F. Installation Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python version</td>
+<td>Python 3.8 or newer</td>
+</tr>
+<tr>
+<td>Packages</td>
+<td>None. Standard library only</td>
+</tr>
+<tr>
+<td>Extra installation</td>
+<td>Nothing to install beyond Python itself</td>
+</tr>
+</tbody>
+</table>
+<p>Check your installation with <code>python --version</code> (see section G).</p>
+<hr />
+<h2>G. How to Run the Files</h2>
+<ol>
+<li>Open a terminal: <strong>Windows</strong> - press <code>Win + R</code>, type <code>cmd</code> (or open PowerShell / VS Code terminal). <strong>Linux/macOS</strong> - open Terminal.</li>
+<li>Verify Python:
+   <code>bash
+   python --version      # Windows (or: py --version)
+   python3 --version     # Linux / macOS</code></li>
+<li>Move into the topic folder and run a file.</li>
+</ol>
+<p><strong>Windows</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice\12-Selection-Sort
+python 01_basic_selection_sort.py
+</code></pre>
+<p>If <code>python</code> is not recognised, use the Python launcher: <code>py 01_basic_selection_sort.py</code>.</p>
+<p><strong>Linux / macOS</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice/12-Selection-Sort
+python3 01_basic_selection_sort.py
+</code></pre>
+<p>Every file is a standalone program: it needs no other file and no internet.</p>
+<hr />
+<h2>H. Revision Notes</h2>
+<p><strong>Key concepts</strong>
+- Find the minimum of the unsorted part, swap it to the front, repeat.
+- Always <code>n(n-1)/2</code> comparisons, no best case better than <code>O(n^2)</code>.
+- At most <code>n - 1</code> swaps: the fewest writes among the simple sorts.
+- Swap-based version is unstable; shifting makes it stable.</p>
+<p><strong>Common mistakes</strong>
+- Storing the minimum value instead of its index.
+- Starting the inner loop at <code>position</code> instead of <code>position + 1</code> (harmless but wasteful).
+- In the bidirectional version, forgetting to fix the maximum's index after the first swap.
+- Claiming that Selection Sort is faster on sorted input (it is not).</p>
+<p><strong>Interview tips</strong>
+- State that it is <code>O(n^2)</code> in every case, <code>O(1)</code> space, in-place, not stable.
+- Mention the low swap count as its one advantage.
+- Be ready to explain why it is unstable with a three-element example.
+- Know that running only <code>k</code> passes gives the <code>k</code> smallest items in <code>O(n * k)</code>.</p>

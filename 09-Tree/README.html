@@ -1,0 +1,547 @@
+<h1>09 - Tree</h1>
+<p>Learn binary trees: how to build them, walk them in every order, measure them, and use the ordering rule of a Binary Search Tree (BST).</p>
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#a-topic-introduction">A. Topic Introduction</a></li>
+<li><a href="#b-core-concepts">B. Core Concepts</a></li>
+<li><a href="#c-how-it-works">C. How It Works</a></li>
+<li><a href="#d-time-and-space-complexity">D. Time and Space Complexity</a></li>
+<li><a href="#e-problems-for-practice">E. Problems for Practice</a></li>
+<li><a href="#f-installation-requirements">F. Installation Requirements</a></li>
+<li><a href="#g-how-to-run-the-files">G. How to Run the Files</a></li>
+<li><a href="#h-revision-notes">H. Revision Notes</a></li>
+</ul>
+<hr />
+<h2>A. Topic Introduction</h2>
+<p><strong>What it is.</strong> A tree is a set of nodes connected in a hierarchy: one root at the top, and every other node hangs below exactly one parent. In a binary tree each node has at most two children, called left and right.</p>
+<p><strong>Why it matters in DSA.</strong> Trees model hierarchical data and give fast search (BST), and almost every tree problem is solved with recursion, so they are the best practice ground for recursive thinking. They lead directly to heaps, tries, segment trees and graphs.</p>
+<p><strong>Where it is used.</strong> File systems, the HTML DOM, database indexes (B-trees), expression parsers in compilers, autocomplete, decision trees, routing tables, and organisation charts.</p>
+<p><strong>Everyday analogy.</strong> A family tree or a folder structure: one top folder, each folder holds sub-folders, and a folder with nothing inside is a leaf.</p>
+<p>If you know PHP/Laravel: a tree node is like a linked-list node with two <code>next</code> pointers (<code>left</code> and <code>right</code>). Nested arrays or a category with <code>parent_id</code> (e.g. menu categories) describe the same hierarchy.</p>
+<hr />
+<h2>B. Core Concepts</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Node</td>
+<td>One element holding a value, a left child and a right child.</td>
+</tr>
+<tr>
+<td>Root</td>
+<td>The top node (no parent).</td>
+</tr>
+<tr>
+<td>Parent / child</td>
+<td>A node directly above / below another.</td>
+</tr>
+<tr>
+<td>Leaf</td>
+<td>A node with no children.</td>
+</tr>
+<tr>
+<td>Internal node</td>
+<td>A node with at least one child.</td>
+</tr>
+<tr>
+<td>Subtree</td>
+<td>A node together with everything below it.</td>
+</tr>
+<tr>
+<td>Depth of a node</td>
+<td>Number of edges from the root to it (root = 0).</td>
+</tr>
+<tr>
+<td>Height of a tree</td>
+<td>Number of nodes on the longest root-to-leaf path in these files (empty tree = 0).</td>
+</tr>
+<tr>
+<td>Level</td>
+<td>All nodes at the same depth.</td>
+</tr>
+<tr>
+<td>Balanced</td>
+<td>Left and right heights differ by at most 1 at every node.</td>
+</tr>
+<tr>
+<td>BST rule</td>
+<td>For every node: all left-subtree values are smaller, all right-subtree values are larger.</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-text">            1            &lt;- root, level 0
+           / \
+          2   3          &lt;- level 1 (3 is a leaf)
+         / \
+        4   5            &lt;- level 2 (leaves)
+
+Node 2: parent=1, children=4 and 5, internal node.
+</code></pre>
+<h3>Depth-first versus breadth-first</h3>
+<pre><code class="language-text">Preorder  (Root, Left, Right) : 1 2 4 5 3
+Inorder   (Left, Root, Right) : 4 2 5 1 3
+Postorder (Left, Right, Root) : 4 5 2 3 1
+Level-order (top to bottom)   : 1 2 3 4 5
+</code></pre>
+<p>Depth-first uses recursion (or your own stack); breadth-first uses a queue.</p>
+<h3>A BST</h3>
+<pre><code class="language-text">          50
+        /    \
+      30      70
+     /  \    /  \
+    20  40  60  80
+
+Inorder walk of a BST gives sorted order: 20 30 40 50 60 70 80
+</code></pre>
+<pre><code class="language-mermaid">flowchart TD
+    S[search target at node] --&gt; E{node is empty?}
+    E -- yes --&gt; NF[not found]
+    E -- no --&gt; EQ{target == node.value?}
+    EQ -- yes --&gt; F[found]
+    EQ -- no --&gt; LT{target &lt; node.value?}
+    LT -- yes --&gt; L[go left]
+    LT -- no --&gt; R[go right]
+</code></pre>
+<hr />
+<h2>C. How It Works</h2>
+<p><strong>Recursion pattern.</strong> Most tree functions follow one template: handle the empty node (base case), solve the left subtree, solve the right subtree, combine.</p>
+<pre><code class="language-text">height(node):  if node is empty -&gt; 0
+               otherwise 1 + larger of (height(left), height(right))
+</code></pre>
+<p>Dry run of height on the first tree in section B (root 1, children 2 and 3, node 2 has children 4 and 5):</p>
+<table>
+<thead>
+<tr>
+<th>Call</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>height(4)</td>
+<td>1 + max(0, 0) = 1</td>
+</tr>
+<tr>
+<td>height(5)</td>
+<td>1</td>
+</tr>
+<tr>
+<td>height(2)</td>
+<td>1 + max(1, 1) = 2</td>
+</tr>
+<tr>
+<td>height(3)</td>
+<td>1</td>
+</tr>
+<tr>
+<td>height(1)</td>
+<td>1 + max(2, 1) = 3</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Level-order with a queue.</strong> Start with the root in the queue. For each level, take exactly the current queue length of nodes, record them, and push their children. That count is what separates one level from the next.</p>
+<p><strong>BST insert.</strong> Compare with the current node: smaller goes left, larger goes right; attach the new node at the first empty spot. Inserting 50, 30, 70, 20 gives the tree shown earlier. Inserting 1, 2, 3, 4, 5 in order gives a chain of height 5, because insertion order decides the shape.</p>
+<p><strong>BST delete, three cases.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Leaf</td>
+<td>Remove it.</td>
+</tr>
+<tr>
+<td>One child</td>
+<td>Replace the node by that child.</td>
+</tr>
+<tr>
+<td>Two children</td>
+<td>Copy the inorder successor (smallest value in the right subtree) into the node, then delete that successor from the right subtree.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Validate a BST.</strong> Checking only parent against child is wrong: a value deep in the right subtree must still be larger than the root. Pass down an allowed range (low, high) and tighten it as you go left or right.</p>
+<hr />
+<h2>D. Time and Space Complexity</h2>
+<p>n = number of nodes, h = height of the tree (about log n if balanced, n if skewed).</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Time</th>
+<th>Space</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Build from a level-order list</td>
+<td>O(n)</td>
+<td>O(n)</td>
+<td>Queue of waiting parents</td>
+</tr>
+<tr>
+<td>Preorder / inorder / postorder (recursive)</td>
+<td>O(n)</td>
+<td>O(h)</td>
+<td>Recursion stack</td>
+</tr>
+<tr>
+<td>Iterative traversals</td>
+<td>O(n)</td>
+<td>O(h)</td>
+<td>Explicit stack; O(n) when skewed</td>
+</tr>
+<tr>
+<td>Level-order</td>
+<td>O(n)</td>
+<td>O(w)</td>
+<td>w = widest level, up to O(n)</td>
+</tr>
+<tr>
+<td>Height, count nodes/leaves</td>
+<td>O(n)</td>
+<td>O(h)</td>
+<td>Every node visited once</td>
+</tr>
+<tr>
+<td>BST search / insert / delete</td>
+<td>O(h)</td>
+<td>O(h) recursive, O(1) iterative</td>
+<td>Balanced O(log n), skewed O(n)</td>
+</tr>
+<tr>
+<td>BST min / max</td>
+<td>O(h)</td>
+<td>O(1)</td>
+<td>Walk one side</td>
+</tr>
+<tr>
+<td>Validate BST</td>
+<td>O(n)</td>
+<td>O(h)</td>
+<td>Each node visited once</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>E. Problems for Practice</h2>
+<table>
+<thead>
+<tr>
+<th>No</th>
+<th>Title</th>
+<th>Difficulty</th>
+<th>Concept</th>
+<th>Filename</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Creating a Binary Tree and Displaying Its Shape</td>
+<td>Easy</td>
+<td>Node class, building from list, sideways print</td>
+<td><code>01_tree_creation.py</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Inorder, Preorder and Postorder Traversals</td>
+<td>Easy</td>
+<td>recursive depth-first traversal</td>
+<td><code>02_depth_first_traversals.py</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Height (Maximum Depth) of a Binary Tree</td>
+<td>Easy</td>
+<td>post-order recursion, depth, balance</td>
+<td><code>03_tree_height.py</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Count Nodes, Leaves and Internal Nodes</td>
+<td>Easy</td>
+<td>recursive aggregation, leaf test</td>
+<td><code>04_count_nodes_leaves.py</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Level-Order (Breadth-First) Traversal</td>
+<td>Medium</td>
+<td>queue BFS, per-level processing, zigzag</td>
+<td><code>05_level_order_traversal.py</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Binary Search Tree - Insertion</td>
+<td>Easy</td>
+<td>BST rule, recursive and iterative insert</td>
+<td><code>06_bst_insert.py</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Binary Search Tree - Search, Minimum, Maximum</td>
+<td>Easy</td>
+<td>BST search path, min/max, successor</td>
+<td><code>07_bst_search.py</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>Binary Search Tree - Deletion</td>
+<td>Medium</td>
+<td>three deletion cases, successor replacement</td>
+<td><code>08_bst_delete.py</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>Validate a Binary Search Tree</td>
+<td>Medium</td>
+<td>range bounds, inorder check</td>
+<td><code>09_validate_bst.py</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>Iterative Inorder, Preorder and Postorder Traversals</td>
+<td>Medium</td>
+<td>explicit stack instead of recursion</td>
+<td><code>10_iterative_traversals.py</code></td>
+</tr>
+</tbody>
+</table>
+<p>Try each problem yourself first, then compare with the solution file.</p>
+<h3>Problem 1: Creating a Binary Tree and Displaying Its Shape (<code>01_tree_creation.py</code>)</h3>
+<p><strong>Statement.</strong> Build a binary tree from node objects (value, left, right) and print it sideways so the structure is visible. Also build a tree from a level-order list where <code>None</code> marks a missing child.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Input : level-order list = [1, 2, 3, 4, 5, None, 6]
+Output (root at the left, right subtree on top):
+            6
+        3
+    1
+            5
+        2
+            4
+Also  : empty list -&gt; None; node 4 is reported as a leaf
+</code></pre>
+<p><strong>Constraints and edge cases.</strong> Empty list (no tree), only a root, <code>None</code> gaps, skewed trees.</p>
+<p><strong>Hints.</strong>
+- A node is a tiny class with three fields; no methods needed.
+- Sideways print: print right subtree first, then the node indented by its depth, then the left subtree.
+- Building from a list: keep a queue of nodes that still need children; for each, take the next two list items as left and right (skipping <code>None</code>).
+- Handle an empty list or a <code>None</code> first item before anything else.</p>
+<h3>Problem 2: Inorder, Preorder and Postorder Traversals (<code>02_depth_first_traversals.py</code>)</h3>
+<p><strong>Statement.</strong> Visit every node in inorder (Left, Root, Right), preorder (Root, Left, Right) and postorder (Left, Right, Root) using recursion, returning the values as lists.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Input : tree 1 -&gt; (2 -&gt; (4, 5), 3)
+Output: Preorder : [1, 2, 4, 5, 3]
+        Inorder  : [4, 2, 5, 1, 3]
+        Postorder: [4, 5, 2, 3, 1]
+        Empty tree: []
+</code></pre>
+<p><strong>Constraints and edge cases.</strong> Empty tree, single node, only left or only right children.</p>
+<p><strong>Hints.</strong>
+- The three functions are nearly identical; only the position of the "visit" step changes.
+- Base case: an empty node contributes nothing.
+- Collect values in a list (a helper that appends to a shared list is fine).
+- Mnemonic: the name tells where Root goes: PRE = before, IN = between, POST = after.</p>
+<h3>Problem 3: Height (Maximum Depth) of a Binary Tree (<code>03_tree_height.py</code>)</h3>
+<p><strong>Statement.</strong> Return the height (number of nodes on the longest root-to-leaf path; empty tree = 0). Also report the depth of a value (root = 0, missing = -1) and whether the tree is height-balanced.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Input : 1 -&gt; (2 -&gt; (4 -&gt; 5), 3)
+Output: Height: 4
+        Height of left subtree: 3
+        Depth of 5: 3
+        Depth of 99: -1
+        Balanced? False
+</code></pre>
+<p><strong>Constraints and edge cases.</strong> Empty tree (0), single node (1), skewed tree (height = n).</p>
+<p><strong>Hints.</strong>
+- Height depends on the children's heights, so compute children first (post-order thinking).
+- Empty node returns 0; otherwise add 1 to the larger child height.
+- Depth: pass the current depth down as you recurse, return it when the value matches.
+- Balanced: at every node, the two child heights must differ by at most 1 (and both subtrees must be balanced).</p>
+<h3>Problem 4: Count Nodes, Leaves and Internal Nodes (<code>04_count_nodes_leaves.py</code>)</h3>
+<p><strong>Statement.</strong> Compute the total nodes, leaf nodes (no children), internal nodes (at least one child) and the sum of all values.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Input : 10 -&gt; (5 -&gt; (3, 7), 20 -&gt; (None, 30))
+Output: nodes=6, leaves=3, internal=3, sum=75
+        Empty tree: nodes=0, leaves=0, internal=0, sum=0
+        Single node (8): nodes=1, leaves=1, internal=0, sum=8
+</code></pre>
+<p><strong>Constraints and edge cases.</strong> Empty tree, single node (it is a leaf), node with one child (internal, not a leaf).</p>
+<p><strong>Hints.</strong>
+- Nodes: one for this node plus the counts of both subtrees.
+- A leaf is a node whose left AND right are both missing.
+- Internal = nodes minus leaves, or count directly; both agree.
+- Same recursion shape for the sum: this node's value plus both subtree sums.</p>
+<h3>Problem 5: Level-Order (Breadth-First) Traversal (<code>05_level_order_traversal.py</code>)</h3>
+<p><strong>Statement.</strong> Return the values level by level, top to bottom and left to right, as a flat list and as a list of levels. Also return the zigzag order (reverse direction on alternate levels).</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Input : 3 -&gt; (9, 20 -&gt; (15, 7))
+Output: By levels: [[3], [9, 20], [15, 7]]
+        Flat: [3, 9, 20, 15, 7]
+        Zigzag: [[3], [20, 9], [15, 7]]
+        Empty tree: []
+</code></pre>
+<p><strong>Constraints and edge cases.</strong> Empty tree gives an empty list; single node; skewed tree (every level has one node).</p>
+<p><strong>Hints.</strong>
+- Use <code>collections.deque</code> as the queue (a Python list makes dequeuing slow).
+- At the start of each round, note the queue length: that is exactly how many nodes belong to this level.
+- Pop that many nodes, store their values, push their non-empty children.
+- Zigzag: flip every other level's list after collecting it (do it by hand, no shortcuts needed beyond a simple reversal you write).
+- The solution also shows a recursive version that passes the level number down.</p>
+<h3>Problem 6: Binary Search Tree - Insertion (<code>06_bst_insert.py</code>)</h3>
+<p><strong>Statement.</strong> Insert integers one by one into a BST (left subtree smaller, right subtree larger, duplicates ignored). Show that an inorder walk prints values in sorted order.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Input : values = [50, 30, 70, 20, 40, 60, 80]
+Output: Inorder (sorted): [20, 30, 40, 50, 60, 70, 80]
+        Duplicates ignored: [3, 5, 8]
+        Height of balanced-looking tree: 3
+        Height after inserting sorted values 1..5: 5
+</code></pre>
+<p><strong>Constraints and edge cases.</strong> Empty tree (new value becomes the root), duplicate values, sorted input (creates a chain).</p>
+<p><strong>Hints.</strong>
+- Recursive version: if the spot is empty, return a new node; otherwise recurse left or right and reattach the returned subtree.
+- Iterative version: walk down while remembering the parent, then attach to the parent's left or right.
+- For equal values, do nothing.
+- Compare heights for random-looking versus sorted input to see why balance matters.</p>
+<h3>Problem 7: Binary Search Tree - Search, Minimum, Maximum (<code>07_bst_search.py</code>)</h3>
+<p><strong>Statement.</strong> Search a BST for a target and report the path taken. Also find the smallest and largest values and the inorder successor of a value (the next larger value present).</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Input : BST from [50, 30, 70, 20, 40, 60, 80]
+Output: Search 60: found=True, path=[50, 70, 60]
+        Search 25: found=False, path=[50, 30, 20]
+        Minimum: 20 Maximum: 80
+        Successor of 20: 30   Successor of 50: 60   Successor of 80: None
+        Empty tree: False None
+</code></pre>
+<p><strong>Constraints and edge cases.</strong> Empty tree, single node, missing target, target is the maximum (no successor).</p>
+<p><strong>Hints.</strong>
+- Each comparison throws away one whole subtree.
+- Min: keep going left. Max: keep going right.
+- Successor: if the node has a right subtree, it is that subtree's minimum. Otherwise it is the last ancestor where you turned left on the way down.
+- Walk from the root while tracking the best candidate: no parent pointers are needed.</p>
+<h3>Problem 8: Binary Search Tree - Deletion (<code>08_bst_delete.py</code>)</h3>
+<p><strong>Statement.</strong> Delete a value from a BST so the result is still a valid BST, handling a leaf, a node with one child, and a node with two children.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Input : BST from [50, 30, 70, 20, 40, 60, 80]; delete 20, then 30, then 50
+Output: Start             : inorder=[20, 30, 40, 50, 60, 70, 80]
+        Delete 20 (leaf)  : inorder=[30, 40, 50, 60, 70, 80]
+        Delete 30 (1 child): inorder=[40, 50, 60, 70, 80]
+        Delete 50 (2 kids): inorder=[40, 60, 70, 80] preorder=[60, 40, 70, 80]
+        Delete 999 (none) : unchanged
+</code></pre>
+<p><strong>Constraints and edge cases.</strong> Deleting the root, a missing value, an empty tree, a node with only one child, the last remaining node (result is <code>None</code>).</p>
+<p><strong>Hints.</strong>
+- Search recursively; on the way back, reassign <code>node.left</code> or <code>node.right</code> to whatever the recursive call returns.
+- Zero or one child: return the other child (or <code>None</code>).
+- Two children: find the smallest value in the right subtree, copy it into this node, then delete that value from the right subtree.
+- Why the successor? It is the only value that keeps everything on the left smaller and everything on the right larger.</p>
+<h3>Problem 9: Validate a Binary Search Tree (<code>09_validate_bst.py</code>)</h3>
+<p><strong>Statement.</strong> Given a binary tree, decide whether it is a valid BST: all values in each node's left subtree are smaller and all in its right subtree larger (no duplicates).</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Input : 5 -&gt; (1, 6 -&gt; (3, 7))   (3 sits in the right subtree of 5 but is smaller than 5)
+Output: tricky tree: bounds=False, inorder=False, parent-child-only=True
+        valid BST:   bounds=True, inorder=True
+        duplicate value: bounds=False
+        empty tree: True
+</code></pre>
+<p><strong>Constraints and edge cases.</strong> Empty tree (valid), single node, duplicates (invalid here), values equal to a bound, a tree that looks fine locally but is not.</p>
+<p><strong>Hints.</strong>
+- Method 1 (bounds): each node must lie strictly between a low and a high limit. Going left tightens the high limit to the node's value; going right tightens the low limit.
+- Start with no limits (infinite or <code>None</code>).
+- Method 2 (inorder): an inorder walk of a valid BST is strictly increasing; keep the previous value and compare.
+- The "parent-child-only" check in the solution is the common wrong answer: try to see why it passes the tricky tree.</p>
+<h3>Problem 10: Iterative Inorder, Preorder and Postorder Traversals (<code>10_iterative_traversals.py</code>)</h3>
+<p><strong>Statement.</strong> Perform the three depth-first traversals WITHOUT recursion, using an explicit stack (a Python list).</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Input : 1 -&gt; (2 -&gt; (4, 5), 3)
+Output: Inorder  : [4, 2, 5, 1, 3]
+        Preorder : [1, 2, 4, 5, 3]
+        Postorder: [4, 5, 2, 3, 1]
+        Empty tree: [] [] []
+        Deep chain of 3000 nodes works without a recursion error
+</code></pre>
+<p><strong>Constraints and edge cases.</strong> Empty tree, single node, skewed trees (the stack grows to n).</p>
+<p><strong>Hints.</strong>
+- Inorder: go as far left as possible, pushing nodes; pop one, visit it, then move to its right child and repeat.
+- Preorder: pop, visit, push the right child first and then the left, so left is processed first.
+- Postorder: one trick is to produce Root-Right-Left order and then reverse it; another uses two stacks.
+- A deep chain would crash a recursive version (Python's default limit is about 1000 calls), which is the whole point of this problem.</p>
+<hr />
+<h2>F. Installation Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python version</td>
+<td>Python 3.8 or newer</td>
+</tr>
+<tr>
+<td>Packages</td>
+<td>None beyond the standard library (<code>collections.deque</code> is used in the level-order file)</td>
+</tr>
+<tr>
+<td>Third-party installs</td>
+<td>Not needed (no NumPy in this topic)</td>
+</tr>
+</tbody>
+</table>
+<p>Check your version:</p>
+<pre><code class="language-bash">python --version
+</code></pre>
+<hr />
+<h2>G. How to Run the Files</h2>
+<ol>
+<li>Open a terminal: Windows - Command Prompt or PowerShell (or the terminal in VS Code); Linux/macOS - Terminal.</li>
+<li>Go to the topic folder.</li>
+<li>Run a file.</li>
+</ol>
+<p><strong>Windows</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice\09-Tree
+python 01_tree_creation.py
+</code></pre>
+<p>If <code>python</code> is not recognised, use the launcher: <code>py 01_tree_creation.py</code> (and <code>py --version</code>).</p>
+<p><strong>Linux / macOS</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice/09-Tree
+python3 01_tree_creation.py
+python3 --version
+</code></pre>
+<p>Each file is standalone: it needs no other file and no input from you.</p>
+<hr />
+<h2>H. Revision Notes</h2>
+<p><strong>Key concepts</strong>
+- A node has a value, a left and a right pointer; a leaf has both empty.
+- Preorder = Root first, inorder = Root in the middle, postorder = Root last; level-order uses a queue.
+- Inorder traversal of a BST is sorted.
+- BST search/insert/delete cost O(h): O(log n) when balanced, O(n) when skewed.
+- Height: empty = 0, otherwise 1 + larger child height (these files count nodes, not edges).
+- BST delete with two children: replace with the inorder successor.</p>
+<p><strong>Common mistakes</strong>
+- Forgetting the empty-node base case, leading to attribute errors on <code>None</code>.
+- Mixing up height counted in nodes versus edges; always state your convention.
+- Validating a BST by comparing only parent and child instead of the full range.
+- In BST delete, forgetting to reassign the child links returned from the recursive call.
+- Counting a node with a single child as a leaf.
+- In level-order, not fixing the level size before the loop (the queue changes while you iterate).
+- Allowing duplicates silently; decide and state the rule.</p>
+<p><strong>Interview tips</strong>
+- Say the traversal order out loud and draw a 5-node tree before coding.
+- Most tree problems are: base case, recurse left, recurse right, combine.
+- Be ready to convert a recursive solution to an iterative one (problem 10).
+- Know classics: Maximum Depth, Level Order, Validate BST, Lowest Common Ancestor, Kth Smallest in a BST.
+- Mention the skewed-tree worst case and that self-balancing trees (AVL, Red-Black) fix it.</p>

@@ -1,0 +1,440 @@
+<h1>04 - Doubly and Circular Linked List</h1>
+<p>Extend the linked list with two-way links and with a circle. Ten programs cover creation, insertion, deletion, reversal, bidirectional search, palindromes, circular traversal, the Josephus problem and splitting a circle.</p>
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#a-topic-introduction">A. Topic Introduction</a></li>
+<li><a href="#b-core-concepts">B. Core Concepts</a></li>
+<li><a href="#c-how-it-works">C. How It Works</a></li>
+<li><a href="#d-time-and-space-complexity">D. Time and Space Complexity</a></li>
+<li><a href="#e-problems-for-practice">E. Problems for Practice</a></li>
+<li><a href="#f-installation-requirements">F. Installation Requirements</a></li>
+<li><a href="#g-how-to-run-the-files">G. How to Run the Files</a></li>
+<li><a href="#h-revision-notes">H. Revision Notes</a></li>
+</ul>
+<hr />
+<h2>A. Topic Introduction</h2>
+<p><strong>What it is.</strong> A doubly linked list node stores <code>prev</code> and <code>next</code>, so you can walk in both directions. A circular list has no <code>None</code> at the end: the last node points back to the first.</p>
+<p><strong>Why it matters in DSA.</strong> Two-way links make deleting a known node and walking backwards cheap. Circular lists model anything that repeats in a loop. Both are common interview follow-ups to the singly linked list.</p>
+<p><strong>Where it is used.</strong> Browser back/forward history, text-editor cursors, LRU caches, music players on repeat, round-robin schedulers and multiplayer turn order.</p>
+<p><strong>Everyday analogy.</strong> A doubly linked list is a train: each carriage has a coupling in front and behind. A circular list is a roundabout: keep driving and you return to where you started.</p>
+<p>If you know Laravel: pagination with "previous" and "next" links is a doubly linked idea; a queue worker that cycles through a fixed set of servers is a circular idea.</p>
+<hr />
+<h2>B. Core Concepts</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>prev</code> / <code>next</code></td>
+<td>The two references stored in a doubly linked node.</td>
+</tr>
+<tr>
+<td>Head / tail</td>
+<td>First and last node. In a DLL <code>head.prev</code> and <code>tail.next</code> are <code>None</code>.</td>
+</tr>
+<tr>
+<td>Circular list</td>
+<td>The tail's <code>next</code> points to the head (and in a circular DLL <code>head.prev</code> points to the tail).</td>
+</tr>
+<tr>
+<td>Tail pointer</td>
+<td>Keeping only the tail of a circular list gives the head as <code>tail.next</code>.</td>
+</tr>
+<tr>
+<td>Josephus problem</td>
+<td>Eliminate every k-th person in a circle until one survives.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Doubly linked list</strong></p>
+<pre><code class="language-text">None &lt;- [10] &lt;-&gt; [20] &lt;-&gt; [30] &lt;-&gt; [40] -&gt; None
+         ^head                       ^tail
+</code></pre>
+<p><strong>Circular singly linked list</strong></p>
+<pre><code class="language-text">      +-----------------------------+
+      v                             |
+    [1] --&gt; [2] --&gt; [3] --&gt; [4] ----+
+     ^head                    ^tail
+</code></pre>
+<pre><code class="language-mermaid">flowchart LR
+    A[&quot;1&quot;] --&gt; B[&quot;2&quot;] --&gt; C[&quot;3&quot;] --&gt; D[&quot;4&quot;] --&gt; A
+</code></pre>
+<p><strong>Key difference.</strong> In a DLL you stop when the pointer is <code>None</code>. In a circular list you stop when you come back to the start - using <code>while current is not None</code> loops forever.</p>
+<hr />
+<h2>C. How It Works</h2>
+<p><strong>Dry run 1: delete 30 from <code>10 &lt;-&gt; 20 &lt;-&gt; 30 &lt;-&gt; 40</code></strong></p>
+<pre><code class="language-text">node = the node holding 30
+node.prev.next = node.next     # 20 -&gt; 40
+node.next.prev = node.prev     # 40 &lt;- 20
+result: 10 &lt;-&gt; 20 &lt;-&gt; 40
+</code></pre>
+<p>No search for a "previous" node is needed - the node already knows it.</p>
+<p><strong>Dry run 2: reverse a DLL (swap <code>prev</code> and <code>next</code> in every node)</strong></p>
+<table>
+<thead>
+<tr>
+<th>Node</th>
+<th>prev before</th>
+<th>next before</th>
+<th>prev after</th>
+<th>next after</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>None</td>
+<td>2</td>
+<td>2</td>
+<td>None</td>
+</tr>
+<tr>
+<td>2</td>
+<td>1</td>
+<td>3</td>
+<td>3</td>
+<td>1</td>
+</tr>
+<tr>
+<td>3</td>
+<td>2</td>
+<td>None</td>
+<td>None</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+<p>Finally swap <code>head</code> and <code>tail</code>.</p>
+<p><strong>Dry run 3: search from both ends of <code>[4, 8, 15, 16, 23, 42]</code></strong></p>
+<pre><code class="language-text">iteration 1: front=4  back=42
+iteration 2: front=8  back=23
+iteration 3: front=15 back=16   target 16 found from the back
+</code></pre>
+<p>At most n/2 iterations.</p>
+<p><strong>Dry run 4: Josephus with n = 5, k = 2</strong></p>
+<pre><code class="language-text">circle: 1 2 3 4 5   eliminate 2 -&gt; 1 3 4 5
+        continue from 3: eliminate 4 -&gt; 1 3 5
+        continue from 5: eliminate 1 -&gt; 3 5
+        continue from 3: eliminate 5 -&gt; 3 survives
+</code></pre>
+<hr />
+<h2>D. Time and Space Complexity</h2>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Doubly linked</th>
+<th>Circular singly (tail pointer)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Insert at head</td>
+<td>O(1)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>Insert at tail</td>
+<td>O(1)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>Delete head / tail</td>
+<td>O(1)</td>
+<td>head O(1), tail O(n)</td>
+</tr>
+<tr>
+<td>Delete a known node</td>
+<td>O(1)</td>
+<td>O(n) (need previous)</td>
+</tr>
+<tr>
+<td>Search</td>
+<td>O(n)</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>Reverse</td>
+<td>O(n) time, O(1) space</td>
+<td>-</td>
+</tr>
+<tr>
+<td>Josephus (simulation)</td>
+<td>-</td>
+<td>O(n * k)</td>
+</tr>
+</tbody>
+</table>
+<p>Extra memory: a DLL stores one more pointer per node than a singly linked list (O(n) total either way).</p>
+<hr />
+<h2>E. Problems for Practice</h2>
+<table>
+<thead>
+<tr>
+<th>No</th>
+<th>Title</th>
+<th>Difficulty</th>
+<th>Concept</th>
+<th>Python File</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Create a Doubly Linked List and Traverse It Both Ways</td>
+<td>Easy</td>
+<td>prev/next links, forward and backward walk</td>
+<td><code>01_dll_creation_and_traversal.py</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Insert at Head, Tail and Any Position</td>
+<td>Easy</td>
+<td>Four-pointer updates</td>
+<td><code>02_dll_insert_operations.py</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Delete from Head, Tail and by Value</td>
+<td>Easy</td>
+<td>Unlinking with prev/next, edge nodes</td>
+<td><code>03_dll_delete_operations.py</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Reverse a Doubly Linked List</td>
+<td>Medium</td>
+<td>In-place reversal by swapping links</td>
+<td><code>04_dll_reverse.py</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Search a Doubly Linked List from Both Ends</td>
+<td>Medium</td>
+<td>Two pointers meeting in the middle</td>
+<td><code>05_dll_search_from_both_ends.py</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Check if a Doubly Linked List is a Palindrome</td>
+<td>Medium</td>
+<td>Compare ends moving inward</td>
+<td><code>06_dll_palindrome_check.py</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Create and Traverse a Circular Linked List</td>
+<td>Easy</td>
+<td>Circular structure, stopping condition</td>
+<td><code>07_circular_list_traversal.py</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>Insert and Delete in a Circular Linked List</td>
+<td>Medium</td>
+<td>Tail pointer, keeping the circle intact</td>
+<td><code>08_circular_insert_delete.py</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>Josephus Problem with a Circular Linked List</td>
+<td>Medium</td>
+<td>Simulation on a circle, modular thinking</td>
+<td><code>09_circular_josephus_problem.py</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>Detect a Circular List and Split It into Two Halves</td>
+<td>Medium</td>
+<td>Circle detection, slow/fast, splitting</td>
+<td><code>10_circular_detect_and_split.py</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Problem 1 - Create a Doubly Linked List and Traverse It Both Ways (<code>01_dll_creation_and_traversal.py</code>)</h3>
+<p><strong>Statement.</strong> Build a doubly linked list from a Python list, print it head to tail and tail to head, and return the length.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">values = [10, 20, 30, 40]
+Forward : 10 &lt;-&gt; 20 &lt;-&gt; 30 &lt;-&gt; 40
+Backward: 40 &lt;-&gt; 30 &lt;-&gt; 20 &lt;-&gt; 10
+Length  : 4
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list (both walks print nothing); single node (head is tail); duplicate values.</p>
+<p><strong>Hints.</strong>
+- Every append must set both <code>new.prev</code> and <code>tail.next</code>.
+- Walk backwards by starting at <code>tail</code> and following <code>prev</code>.
+- Keep both <code>head</code> and <code>tail</code>.</p>
+<h3>Problem 2 - Insert at Head, Tail and Any Position (<code>02_dll_insert_operations.py</code>)</h3>
+<p><strong>Statement.</strong> Implement <code>insert_at_head</code>, <code>insert_at_tail</code> and <code>insert_at_position(index, value)</code>. Invalid positions must be rejected.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">tail 20, head 10, tail 40 -&gt; [10, 20, 40]
+insert 30 at 2 -&gt; True [10, 20, 30, 40]
+insert 99 at 9 -&gt; False
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list; index 0; index equal to size; negative index; index larger than size.</p>
+<p><strong>Hints.</strong>
+- Inserting in the middle changes four references.
+- Link the new node's own <code>prev</code> and <code>next</code> first.
+- Update <code>head</code> or <code>tail</code> when inserting at the ends.</p>
+<h3>Problem 3 - Delete from Head, Tail and by Value (<code>03_dll_delete_operations.py</code>)</h3>
+<p><strong>Statement.</strong> Implement <code>delete_head</code>, <code>delete_tail</code> and <code>delete_value(value)</code> (first occurrence) and report what was removed.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">10 &lt;-&gt; 20 &lt;-&gt; 30 &lt;-&gt; 40 &lt;-&gt; 50
+delete_head -&gt; 10, delete_tail -&gt; 50, delete 30 -&gt; True, delete 99 -&gt; False
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Delete from an empty list; delete the only node (both <code>head</code> and <code>tail</code> become <code>None</code>); value absent; value repeated.</p>
+<p><strong>Hints.</strong>
+- Neighbours are reached through the node's own <code>prev</code> and <code>next</code>.
+- Handle head and tail separately because one neighbour is missing.
+- When the last node goes, reset both ends.</p>
+<h3>Problem 4 - Reverse a Doubly Linked List (<code>04_dll_reverse.py</code>)</h3>
+<p><strong>Statement.</strong> Reverse the list in place so the old tail becomes the head. Do not create new nodes.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">1 &lt;-&gt; 2 &lt;-&gt; 3 &lt;-&gt; 4 &lt;-&gt; 5
+Forward after reverse : [5, 4, 3, 2, 1]
+Backward after reverse: [1, 2, 3, 4, 5]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list; single node; two nodes.</p>
+<p><strong>Hints.</strong>
+- Swap <code>prev</code> and <code>next</code> of each node while walking.
+- Remember to move to the old <code>prev</code> (the former next) after swapping.
+- Swap <code>head</code> and <code>tail</code> at the end.</p>
+<h3>Problem 5 - Search a Doubly Linked List from Both Ends (<code>05_dll_search_from_both_ends.py</code>)</h3>
+<p><strong>Statement.</strong> Return the index of a target by moving one pointer from the head and one from the tail at the same time. Return -1 if absent.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[4, 8, 15, 16, 23, 42]
+42 -&gt; index 5 after 1 iteration
+16 -&gt; index 3 after 3 iterations
+99 -&gt; -1
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list; one node; target in the middle; duplicates (the nearer end wins); even and odd lengths.</p>
+<p><strong>Hints.</strong>
+- Track both indices: front increases, back decreases.
+- Stop when the pointers cross.
+- Check both pointers every iteration, including when they meet on the same node.</p>
+<h3>Problem 6 - Check if a Doubly Linked List is a Palindrome (<code>06_dll_palindrome_check.py</code>)</h3>
+<p><strong>Statement.</strong> Return <code>True</code> if the list reads the same forwards and backwards.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">['r','a','c','e','c','a','r'] -&gt; True
+['a','b','c'] -&gt; False
+[1, 2, 2, 1] -&gt; True
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list and one node are palindromes; even and odd length; case sensitivity.</p>
+<p><strong>Hints.</strong>
+- Use a front pointer and a back pointer.
+- Compare, then move them toward each other.
+- Stop when they meet or pass each other.</p>
+<h3>Problem 7 - Create and Traverse a Circular Linked List (<code>07_circular_list_traversal.py</code>)</h3>
+<p><strong>Statement.</strong> Build a circular singly linked list, traverse it exactly once, count its nodes and show that following <code>next</code> keeps cycling.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">values = [1, 2, 3, 4]
+One traversal: [1, 2, 3, 4]
+Walk 7 steps: [1, 2, 3, 4, 1, 2, 3]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list (tail is <code>None</code>); single node pointing to itself; <code>while current is not None</code> loops forever.</p>
+<p><strong>Hints.</strong>
+- Point the last node's <code>next</code> at the head.
+- Use a do-while style loop: visit, move, stop when back at the head.
+- A single node's <code>next</code> is itself.</p>
+<h3>Problem 8 - Insert and Delete in a Circular Linked List (<code>08_circular_insert_delete.py</code>)</h3>
+<p><strong>Statement.</strong> Implement <code>insert_at_front</code>, <code>insert_at_end</code> and <code>delete_value</code> for a circular singly linked list that keeps only a tail pointer.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">insert end 2, end 3, front 1 -&gt; [1, 2, 3]
+delete 3 -&gt; [1, 2]; delete 5 -&gt; False
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list; single node; deleting the head; deleting the tail; value absent; duplicates (only the first removed).</p>
+<p><strong>Hints.</strong>
+- The head is always <code>tail.next</code>.
+- Front and end inserts differ only in whether <code>tail</code> moves.
+- Deleting the only node must set <code>tail</code> to <code>None</code>.</p>
+<h3>Problem 9 - Josephus Problem with a Circular Linked List (<code>09_circular_josephus_problem.py</code>)</h3>
+<p><strong>Statement.</strong> n people stand in a circle numbered 1..n. Starting at 1, every k-th person is eliminated until one remains. Return the elimination order and the survivor.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">n = 7, k = 3
+eliminated = [3, 6, 2, 7, 5, 1], survivor = 4
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> n = 1; k = 1 (eliminates in order); k larger than n (wraps naturally); n or k not positive.</p>
+<p><strong>Hints.</strong>
+- Build a circle, then move k - 1 steps and remove the next node.
+- Keep a pointer to the node before the one being removed.
+- A closed-form recurrence exists and is useful as a check.</p>
+<h3>Problem 10 - Detect a Circular List and Split It into Two Halves (<code>10_circular_detect_and_split.py</code>)</h3>
+<p><strong>Statement.</strong> Decide whether a list is circular (last node links back to the head). If it is, split it into two circular lists of sizes ceil(n/2) and floor(n/2).</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">1 -&gt; 2 -&gt; 3 -&gt; 4 -&gt; 5 -&gt; back to 1
+Split: [1, 2, 3] and [4, 5]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list; single node (cannot split into two non-empty halves); two nodes; odd and even sizes; a list that loops back to a middle node instead of the head.</p>
+<p><strong>Hints.</strong>
+- Distinguish 'has a cycle' from 'is a pure circle through the head'.
+- Slow/fast pointers locate the middle.
+- Close both halves by pointing each new tail at its own head.</p>
+<hr />
+<h2>F. Installation Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python version</td>
+<td>Python 3.8 or newer</td>
+</tr>
+<tr>
+<td>Packages</td>
+<td>None. Standard library only</td>
+</tr>
+<tr>
+<td>Extra installation</td>
+<td>Nothing to install beyond Python itself</td>
+</tr>
+</tbody>
+</table>
+<p>Check your installation with <code>python --version</code> (see section G).</p>
+<hr />
+<h2>G. How to Run the Files</h2>
+<ol>
+<li>Open a terminal: <strong>Windows</strong> - press <code>Win + R</code>, type <code>cmd</code> (or open PowerShell / VS Code terminal). <strong>Linux/macOS</strong> - open Terminal.</li>
+<li>Verify Python:
+   <code>bash
+   python --version      # Windows (or: py --version)
+   python3 --version     # Linux / macOS</code></li>
+<li>Move into the topic folder and run a file.</li>
+</ol>
+<p><strong>Windows</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice\04-Doubly-and-Circular-Linked-List
+python 01_dll_creation_and_traversal.py
+</code></pre>
+<p>If <code>python</code> is not recognised, use the Python launcher: <code>py 01_dll_creation_and_traversal.py</code>.</p>
+<p><strong>Linux / macOS</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice/04-Doubly-and-Circular-Linked-List
+python3 01_dll_creation_and_traversal.py
+</code></pre>
+<p>Every file is a standalone program: it needs no other file and no internet.</p>
+<hr />
+<h2>H. Revision Notes</h2>
+<p><strong>Key concepts</strong>
+- A DLL node knows both neighbours, so deleting a known node is O(1).
+- Every DLL insert or delete changes up to four references; keep <code>head</code> and <code>tail</code> consistent.
+- In a circular list the end is detected by returning to the start, not by <code>None</code>.
+- Holding only the tail of a circular list gives O(1) access to both ends.
+- Josephus can be simulated on a circle or solved with a recurrence.</p>
+<p><strong>Common mistakes</strong>
+- Updating <code>next</code> but forgetting <code>prev</code> (list breaks when walked backwards).
+- Forgetting to reset <code>head</code> and <code>tail</code> when the last node is removed.
+- Looping with <code>while current is not None</code> on a circular list.
+- Forgetting to close the circle after splitting.
+- Off-by-one errors when counting k steps.</p>
+<p><strong>Interview tips</strong>
+- Say why a DLL costs more memory but gives O(1) delete of a given node (LRU cache).
+- Draw the four pointer changes before coding an insert.
+- For circular lists, test with 0, 1 and 2 nodes first.
+- Mention the Josephus recurrence <code>J(n) = (J(n-1) + k) mod n</code> as the optimised approach.
+- Ask whether the list may contain a cycle that does not pass through the head.</p>

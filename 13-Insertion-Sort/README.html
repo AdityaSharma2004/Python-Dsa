@@ -1,0 +1,459 @@
+<h1>13 - Insertion Sort</h1>
+<p>Learn the sort you already use when arranging playing cards in your hand: take the next item and slide it into the right place among the items before it. Ten programs cover the basic algorithm, tracing, counting, nearly sorted data, stability, binary search, streaming input, linked lists and recursion.</p>
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#a-topic-introduction">A. Topic Introduction</a></li>
+<li><a href="#b-core-concepts">B. Core Concepts</a></li>
+<li><a href="#c-how-it-works">C. How It Works</a></li>
+<li><a href="#d-time-and-space-complexity">D. Time and Space Complexity</a></li>
+<li><a href="#e-problems-for-practice">E. Problems for Practice</a></li>
+<li><a href="#f-installation-requirements">F. Installation Requirements</a></li>
+<li><a href="#g-how-to-run-the-files">G. How to Run the Files</a></li>
+<li><a href="#h-revision-notes">H. Revision Notes</a></li>
+</ul>
+<hr />
+<h2>A. Topic Introduction</h2>
+<p><strong>What it is.</strong> Insertion Sort keeps a sorted part at the left of the list. In each pass it takes the next item (the key), shifts larger items of the sorted part one place to the right, and drops the key into the gap.</p>
+<p><strong>Why it matters in DSA.</strong> It is fast on small and nearly sorted data (<code>O(n)</code> in the best case), stable, in-place and online (it can sort items as they arrive). Real libraries use it inside hybrid sorts such as Timsort for small chunks.</p>
+<p><strong>Where it is used.</strong> Small arrays, nearly sorted data, keeping a list sorted while new values stream in, and as the finishing step of faster sorts.</p>
+<p><strong>Everyday analogy.</strong> Sorting playing cards in your hand: you pick up one card at a time and slide it left past larger cards until it fits.</p>
+<p>If you know Laravel: it is like adding a new row to an already ordered result set and moving it to the correct position instead of re-sorting the whole set.</p>
+<hr />
+<h2>B. Core Concepts</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Key</td>
+<td>The item currently being inserted.</td>
+</tr>
+<tr>
+<td>Sorted part</td>
+<td>Items to the left of the key, already ordered.</td>
+</tr>
+<tr>
+<td>Shift</td>
+<td>Moving a larger item one slot to the right to make room.</td>
+</tr>
+<tr>
+<td>Comparison</td>
+<td>Checking the key against an item in the sorted part.</td>
+</tr>
+<tr>
+<td>Online algorithm</td>
+<td>Works when the input arrives piece by piece.</td>
+</tr>
+<tr>
+<td>Stable sort</td>
+<td>Equal items keep their original order (stop shifting at an equal item).</td>
+</tr>
+<tr>
+<td>Binary insertion</td>
+<td>Uses binary search to find the insert position (fewer comparisons, same shifts).</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Picture for <code>[6, 3, 8, 2, 5]</code></strong> (the brackets hold the sorted part)</p>
+<pre><code class="language-text">start  : [6] 3 8 2 5
+pass 1 : [3 6] 8 2 5      key 3 shifts 6
+pass 2 : [3 6 8] 2 5      key 8 stays
+pass 3 : [2 3 6 8] 5      key 2 shifts 3 items
+pass 4 : [2 3 5 6 8]      key 5 shifts 2 items
+</code></pre>
+<p><strong>Control flow</strong></p>
+<pre><code class="language-mermaid">flowchart TD
+    A[i = 1] --&gt; B[key = a i, j = i - 1]
+    B --&gt; C{j &gt;= 0 and a j &gt; key?}
+    C -- yes --&gt; D[a j+1 = a j, j = j - 1] --&gt; C
+    C -- no --&gt; E[a j+1 = key]
+    E --&gt; F{more items?}
+    F -- yes --&gt; G[i + 1] --&gt; B
+    F -- no --&gt; H[Done]
+</code></pre>
+<hr />
+<h2>C. How It Works</h2>
+<p><strong>Dry run on <code>[6, 3, 8, 2, 5]</code></strong></p>
+<table>
+<thead>
+<tr>
+<th>Pass</th>
+<th>Key</th>
+<th>Sorted part before</th>
+<th>Shifts</th>
+<th>Sorted part after</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>3</td>
+<td>6</td>
+<td>1 (6 moves right)</td>
+<td>3 6</td>
+</tr>
+<tr>
+<td>2</td>
+<td>8</td>
+<td>3 6</td>
+<td>0</td>
+<td>3 6 8</td>
+</tr>
+<tr>
+<td>3</td>
+<td>2</td>
+<td>3 6 8</td>
+<td>3</td>
+<td>2 3 6 8</td>
+</tr>
+<tr>
+<td>4</td>
+<td>5</td>
+<td>2 3 6 8</td>
+<td>2 (8 and 6 move)</td>
+<td>2 3 5 6 8</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why it is fast on sorted data.</strong> If every key is already larger than its left neighbour, the inner loop stops after one comparison, giving <code>n - 1</code> comparisons and no shifts.</p>
+<p><strong>Why it is stable.</strong> The shifting loop uses a strict <code>&gt;</code> test, so an equal item is not moved past the key. Equal items keep their order.</p>
+<p><strong>Shifts equal inversions.</strong> Each shift removes exactly one inversion (a pair out of order). That is why a nearly sorted list needs few shifts and a reversed list needs <code>n(n-1)/2</code>.</p>
+<hr />
+<h2>D. Time and Space Complexity</h2>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>Time</th>
+<th>Space</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Best (already sorted)</td>
+<td>O(n)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>Average</td>
+<td>O(n^2)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>Worst (reversed)</td>
+<td>O(n^2)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>Nearly sorted (each item at most k places away)</td>
+<td>O(n * k)</td>
+<td>O(1)</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Variant</th>
+<th>Comparisons</th>
+<th>Shifts</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Basic</td>
+<td>up to <code>n(n-1)/2</code></td>
+<td>equals inversions</td>
+</tr>
+<tr>
+<td>Binary insertion</td>
+<td><code>O(n log n)</code></td>
+<td>still up to <code>O(n^2)</code></td>
+</tr>
+<tr>
+<td>Recursive</td>
+<td>same as basic</td>
+<td>same as basic, plus <code>O(n)</code> stack</td>
+</tr>
+<tr>
+<td>Linked list</td>
+<td>up to <code>O(n^2)</code></td>
+<td>no shifting, only relinking</td>
+</tr>
+</tbody>
+</table>
+<p>Stable: yes. In-place: yes (array version).</p>
+<hr />
+<h2>E. Problems for Practice</h2>
+<table>
+<thead>
+<tr>
+<th>No</th>
+<th>Title</th>
+<th>Difficulty</th>
+<th>Concept</th>
+<th>Python File</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Basic Insertion Sort</td>
+<td>Easy</td>
+<td>Key, shift, insert</td>
+<td><code>01_basic_insertion_sort.py</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Descending Insertion Sort</td>
+<td>Easy</td>
+<td>Selectable order</td>
+<td><code>02_descending_insertion_sort.py</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Insertion Sort Trace</td>
+<td>Easy</td>
+<td>Printing the sorted part and key per pass</td>
+<td><code>03_insertion_sort_trace.py</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Count Operations</td>
+<td>Easy</td>
+<td>Comparisons and shifts for best, mixed, worst</td>
+<td><code>04_count_operations.py</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Nearly Sorted Array</td>
+<td>Medium</td>
+<td>Few shifts when items are close to place</td>
+<td><code>05_nearly_sorted_array.py</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Stable Insertion Sort</td>
+<td>Medium</td>
+<td>Stable versus unstable variant</td>
+<td><code>06_stable_insertion_sort.py</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Binary Insertion Sort</td>
+<td>Medium</td>
+<td>Binary search for the position</td>
+<td><code>07_binary_insertion_sort.py</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>Online Sorted Insertion</td>
+<td>Medium</td>
+<td>Streaming values and running median</td>
+<td><code>08_online_sorted_insertion.py</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>Insertion Sort on a Linked List</td>
+<td>Medium</td>
+<td>Relinking nodes</td>
+<td><code>09_insertion_sort_linked_list.py</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>Recursive Insertion Sort</td>
+<td>Medium</td>
+<td>Sort first n-1, insert the last</td>
+<td><code>10_recursive_insertion_sort.py</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Problem 1 - Basic Insertion Sort (<code>01_basic_insertion_sort.py</code>)</h3>
+<p><strong>Statement.</strong> Sort a list of integers in ascending order using Insertion Sort. Do not use <code>sorted()</code> or <code>list.sort()</code>.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[5, 2, 4, 6, 1, 3] -&gt; [1, 2, 3, 4, 5, 6]
+[9, 7, 5, 3, 1]    -&gt; [1, 3, 5, 7, 9]
+[3, -1, 3, 0, -5, 2] -&gt; [-5, -1, 0, 2, 3, 3]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list, single element, already sorted, reverse sorted, duplicates, negative numbers.</p>
+<p><strong>Hints.</strong>
+- Start the outer loop at index 1; index 0 is a sorted part of size one.
+- Save the key before shifting, because shifting overwrites its slot.
+- Write the key into the gap after the inner loop ends.</p>
+<h3>Problem 2 - Descending Insertion Sort (<code>02_descending_insertion_sort.py</code>)</h3>
+<p><strong>Statement.</strong> Sort from largest to smallest. Make the order selectable so one function handles both directions.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Original: [4, 10, 3, 8, 1]
+Descending: [10, 8, 4, 3, 1]
+Ascending:  [1, 3, 4, 8, 10]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list, one element, all equal values (no shifts), already descending.</p>
+<p><strong>Hints.</strong>
+- Only the shifting condition changes: shift while the left item is smaller than the key.
+- Keep the comparison strict so equal items are not moved.
+- A boolean parameter can choose between the two conditions.</p>
+<h3>Problem 3 - Insertion Sort Trace (<code>03_insertion_sort_trace.py</code>)</h3>
+<p><strong>Statement.</strong> Print the list after every pass, marking the sorted part and the key that was inserted.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Start  : [6] 3 8 2 5
+Pass 1 : [3 6] 8 2 5   (inserted 3)
+Pass 3 : [2 3 6 8] 5   (inserted 2)
+Final  : [2, 3, 5, 6, 8]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty or single-element lists print no passes; already sorted lists show keys that do not move.</p>
+<p><strong>Hints.</strong>
+- Build the display string from the first <code>i + 1</code> items and the rest separately.
+- Print the key you saved before shifting.
+- The "Start" line shows only the first item as sorted.</p>
+<h3>Problem 4 - Count Operations (<code>04_count_operations.py</code>)</h3>
+<p><strong>Statement.</strong> Return how many comparisons and how many shifts the sort performs. Compare best, average and worst case inputs.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Best  [1, 2, 3, 4, 5, 6]  comparisons=5  shifts=0
+Mixed [3, 1, 6, 2, 5, 4]  comparisons=10 shifts=6
+Worst [6, 5, 4, 3, 2, 1]  comparisons=15 shifts=15
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list (0 operations), single element, duplicates (equal items are not shifted: one comparison, no shift).</p>
+<p><strong>Hints.</strong>
+- Count a comparison every time you test the key against an item.
+- Count a shift only when an item actually moves right.
+- For a reversed list of <code>n</code> items both counts should equal <code>n(n-1)/2</code>.</p>
+<h3>Problem 5 - Nearly Sorted Array (<code>05_nearly_sorted_array.py</code>)</h3>
+<p><strong>Statement.</strong> Show that Insertion Sort is very fast when every element is close to its sorted place. Build a nearly sorted list, sort it, and compare the shifts with a reversed list of the same size.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Nearly sorted input: [1, 2, 4, 3, 5, 7, 6, 8, 10, 9]
+Shifts for nearly sorted list (n=10): 3
+Shifts for reversed list (n=10): 45
+Shifts for nearly sorted list (n=1000): 333
+Shifts for reversed list (n=1000): 499500
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> <code>k = 0</code> (already sorted); <code>n</code> smaller than the swap interval; empty list.</p>
+<p><strong>Hints.</strong>
+- Build the input by swapping neighbouring pairs at a fixed interval of a sorted list.
+- Reuse the shift counter from the previous problem.
+- Each swapped neighbouring pair adds exactly one inversion.</p>
+<h3>Problem 6 - Stable Insertion Sort (<code>06_stable_insertion_sort.py</code>)</h3>
+<p><strong>Statement.</strong> Sort <code>(name, marks)</code> records by marks ascending. Students with equal marks must keep their original order. Also show what an unstable variant does.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Original : [('Asha', 80), ('Bob', 70), ('Chen', 80), ('Dina', 70), ('Eli', 60)]
+Stable   : [('Eli', 60), ('Bob', 70), ('Dina', 70), ('Asha', 80), ('Chen', 80)]
+Unstable : [('Eli', 60), ('Dina', 70), ('Bob', 70), ('Chen', 80), ('Asha', 80)]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> All marks equal (output equals input), empty list, single record.</p>
+<p><strong>Hints.</strong>
+- Compare only the marks field.
+- Stable means shift only while the left marks are strictly greater than the key's marks.
+- The unstable variant also shifts past equal marks.</p>
+<h3>Problem 7 - Binary Insertion Sort (<code>07_binary_insertion_sort.py</code>)</h3>
+<p><strong>Statement.</strong> Use binary search to find where each key must be inserted into the sorted part, then shift the elements to make room.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Original: [37, 23, 0, 17, 12, 72, 31, 46, 100, 88, 54]
+Sorted:   [0, 12, 17, 23, 31, 37, 46, 54, 72, 88, 100]
+Duplicates: [1, 1, 3, 3, 5, 5]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list, one element, duplicates, key smaller or larger than everything.</p>
+<p><strong>Hints.</strong>
+- Search only the sorted part (indexes <code>0</code> to <code>i - 1</code>).
+- When the middle value equals the key, continue to the right to stay stable.
+- Binary search cuts comparisons, but the shifting loop still costs <code>O(n)</code> per insert.</p>
+<h3>Problem 8 - Online Sorted Insertion (<code>08_online_sorted_insertion.py</code>)</h3>
+<p><strong>Statement.</strong> Numbers arrive one at a time. After every arrival keep the list of values seen so far sorted, print it, and report the median.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">after 5: [5] median=5
+after 2: [2, 5] median=3.5
+after 9: [2, 5, 9] median=5
+after 1: [1, 2, 5, 9] median=3.5
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> First value (size 1), duplicate values, even count (median is the average of the two middle values), empty stream.</p>
+<p><strong>Hints.</strong>
+- Each new value is one insertion step of Insertion Sort.
+- For an odd count take the middle index; for an even count average the two middle values.
+- Use true division only when the count is even to avoid printing <code>5.0</code>.</p>
+<h3>Problem 9 - Insertion Sort on a Linked List (<code>09_insertion_sort_linked_list.py</code>)</h3>
+<p><strong>Statement.</strong> Sort a singly linked list in ascending order by relinking nodes, not by copying values into an array.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Before: 4 -&gt; 2 -&gt; 1 -&gt; 3
+After : 1 -&gt; 2 -&gt; 3 -&gt; 4
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list, single node, duplicates, already sorted, reverse sorted.</p>
+<p><strong>Hints.</strong>
+- Build a new sorted list and insert each node from the old list into it.
+- A dummy head node removes the special case of inserting at the front.
+- Save the next pointer of a node before you relink it.</p>
+<h3>Problem 10 - Recursive Insertion Sort (<code>10_recursive_insertion_sort.py</code>)</h3>
+<p><strong>Statement.</strong> Implement Insertion Sort recursively: sort the first <code>n - 1</code> elements recursively, then insert the last element into its place.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[9, 4, 7, 1, 8, 2] -&gt; [1, 2, 4, 7, 8, 9]
+[3, 3, 1]          -&gt; [1, 3, 3]
+[]                 -&gt; []
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list, one element, duplicates. Lists longer than about 1000 items exceed Python's default recursion limit, which is why the loop version is preferred.</p>
+<p><strong>Hints.</strong>
+- Base case: a list of size 0 or 1 is already sorted.
+- After the recursive call the first <code>n - 1</code> items are sorted, so the insert step is the same shifting loop.
+- The recursion depth equals <code>n</code>, so the extra stack space is <code>O(n)</code>.</p>
+<hr />
+<h2>F. Installation Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python version</td>
+<td>Python 3.8 or newer</td>
+</tr>
+<tr>
+<td>Packages</td>
+<td>None. Standard library only</td>
+</tr>
+<tr>
+<td>Extra installation</td>
+<td>Nothing to install beyond Python itself</td>
+</tr>
+</tbody>
+</table>
+<p>Check your installation with <code>python --version</code> (see section G).</p>
+<hr />
+<h2>G. How to Run the Files</h2>
+<ol>
+<li>Open a terminal: <strong>Windows</strong> - press <code>Win + R</code>, type <code>cmd</code> (or open PowerShell / VS Code terminal). <strong>Linux/macOS</strong> - open Terminal.</li>
+<li>Verify Python:
+   <code>bash
+   python --version      # Windows (or: py --version)
+   python3 --version     # Linux / macOS</code></li>
+<li>Move into the topic folder and run a file.</li>
+</ol>
+<p><strong>Windows</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice\13-Insertion-Sort
+python 01_basic_insertion_sort.py
+</code></pre>
+<p>If <code>python</code> is not recognised, use the Python launcher: <code>py 01_basic_insertion_sort.py</code>.</p>
+<p><strong>Linux / macOS</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice/13-Insertion-Sort
+python3 01_basic_insertion_sort.py
+</code></pre>
+<p>Every file is a standalone program: it needs no other file and no internet.</p>
+<hr />
+<h2>H. Revision Notes</h2>
+<p><strong>Key concepts</strong>
+- Take the key, shift larger items right, drop the key into the gap.
+- Best case <code>O(n)</code> on sorted data; worst and average <code>O(n^2)</code>; <code>O(1)</code> extra space.
+- Stable, in-place and online.
+- Number of shifts equals the number of inversions.</p>
+<p><strong>Common mistakes</strong>
+- Overwriting the key by shifting before saving it.
+- Checking <code>a[j]</code> before checking <code>j &gt;= 0</code> (negative index wraps around in Python).
+- Using <code>&gt;=</code> while shifting, which makes the sort unstable.
+- Believing binary insertion makes the whole sort <code>O(n log n)</code>; the shifts still cost <code>O(n^2)</code>.</p>
+<p><strong>Interview tips</strong>
+- Say it is the best simple sort for small or nearly sorted input.
+- Link its speed to the inversion count.
+- Mention that Timsort and introsort use insertion sort for small chunks.
+- For a linked list, no shifting is needed, but finding the position is still a linear walk.</p>

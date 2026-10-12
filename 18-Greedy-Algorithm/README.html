@@ -1,0 +1,503 @@
+<h1>18 - Greedy Algorithm</h1>
+<h2>A. Topic Introduction</h2>
+<p><strong>What it is.</strong> A greedy algorithm builds a solution one step at a time. At every step it takes the option that looks best <em>right now</em> and never goes back to change that decision.</p>
+<p><strong>Why it matters in DSA.</strong> Greedy solutions are usually short and fast (often O(n log n) or O(n)). The difficult part is not the code. It is deciding <em>which</em> local choice is safe and being able to argue why it is. Interviewers love greedy problems because a wrong "obvious" rule is easy to write and easy to break with a counterexample.</p>
+<p><strong>Where it is used in real life.</strong>
+- Giving change at a shop counter (largest note first).
+- Scheduling meetings or exam halls, and assigning platforms at a railway station.
+- Compression (Huffman coding) and network routing (Dijkstra, Prim, Kruskal).
+- Job scheduling in operating systems and task queues.</p>
+<p><strong>Everyday analogy.</strong> You are packing for a train and must catch as many connecting trains as possible. At each station you board the train that <em>arrives earliest</em> instead of weighing every future plan. If that rule is provably safe, you have a greedy algorithm. If it is not, you need Dynamic Programming.</p>
+<hr />
+<h2>B. Core Concepts</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Greedy choice</td>
+<td>The locally best option picked at each step.</td>
+</tr>
+<tr>
+<td>Greedy-choice property</td>
+<td>Some globally optimal solution contains the greedy choice.</td>
+</tr>
+<tr>
+<td>Optimal substructure</td>
+<td>After the choice, what remains is a smaller problem of the same kind.</td>
+</tr>
+<tr>
+<td>Exchange argument</td>
+<td>Proof technique: take any optimal answer and swap its first choice for the greedy one without making it worse.</td>
+</tr>
+<tr>
+<td>Counterexample</td>
+<td>A small input on which a proposed greedy rule gives a non-optimal answer. Finding one kills the rule.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The greedy template</strong></p>
+<pre><code>sort or prepare the candidates by a &quot;best first&quot; rule
+answer = empty
+for each candidate in that order:
+    if it is still allowed (fits, does not overlap, ...):
+        take it and update the state
+return answer
+</code></pre>
+<p><strong>Choosing the rule matters (interval example)</strong></p>
+<pre><code>time -&gt;  0    2    4    6    8
+A:       [-----------------------]      (0..100 long meeting)
+B:       [--]                           (1..2)
+C:            [--]                      (3..4)
+
+earliest START   -&gt; picks A  -&gt; 1 meeting
+earliest FINISH  -&gt; picks B, C -&gt; 2 meetings   (correct rule)
+</code></pre>
+<p><strong>Greedy vs Dynamic Programming</strong></p>
+<pre><code>Greedy : commit to one choice, move on.          Fast, but only valid with the greedy-choice property.
+DP     : try all choices, remember sub-answers.  Slower, always valid when substructure holds.
+</code></pre>
+<hr />
+<h2>C. How It Works</h2>
+<p>Dry run of <strong>Activity Selection</strong> (pick maximum non-overlapping meetings), sorted by finish time:</p>
+<p>Meetings: (1,4) (3,5) (0,6) (5,7) (3,9) (5,9) (6,10) (8,11) (8,12) (2,14) (12,16)</p>
+<table>
+<thead>
+<tr>
+<th>Meeting</th>
+<th>last_finish before</th>
+<th>start &gt;= last_finish?</th>
+<th>Action</th>
+<th>last_finish after</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>(1,4)</td>
+<td>-</td>
+<td>first one</td>
+<td>take</td>
+<td>4</td>
+</tr>
+<tr>
+<td>(3,5)</td>
+<td>4</td>
+<td>3 &gt;= 4 no</td>
+<td>skip</td>
+<td>4</td>
+</tr>
+<tr>
+<td>(0,6)</td>
+<td>4</td>
+<td>0 &gt;= 4 no</td>
+<td>skip</td>
+<td>4</td>
+</tr>
+<tr>
+<td>(5,7)</td>
+<td>4</td>
+<td>5 &gt;= 4 yes</td>
+<td>take</td>
+<td>7</td>
+</tr>
+<tr>
+<td>(3,9)</td>
+<td>7</td>
+<td>no</td>
+<td>skip</td>
+<td>7</td>
+</tr>
+<tr>
+<td>(5,9)</td>
+<td>7</td>
+<td>no</td>
+<td>skip</td>
+<td>7</td>
+</tr>
+<tr>
+<td>(6,10)</td>
+<td>7</td>
+<td>no</td>
+<td>skip</td>
+<td>7</td>
+</tr>
+<tr>
+<td>(8,11)</td>
+<td>7</td>
+<td>8 &gt;= 7 yes</td>
+<td>take</td>
+<td>11</td>
+</tr>
+<tr>
+<td>(8,12)</td>
+<td>11</td>
+<td>no</td>
+<td>skip</td>
+<td>11</td>
+</tr>
+<tr>
+<td>(2,14)</td>
+<td>11</td>
+<td>no</td>
+<td>skip</td>
+<td>11</td>
+</tr>
+<tr>
+<td>(12,16)</td>
+<td>11</td>
+<td>12 &gt;= 11 yes</td>
+<td>take</td>
+<td>16</td>
+</tr>
+</tbody>
+</table>
+<p>Result: 4 meetings. Think of it in Laravel terms: it is like ordering a query by <code>finish</code> and then walking the rows once with a running "last finish" variable, the way you would use <code>-&gt;orderBy('finish')-&gt;each(...)</code>.</p>
+<p><strong>How to prove a greedy rule (the mental checklist)</strong>
+1. State the rule in one sentence.
+2. Try to break it with tiny inputs (2 to 4 items, and zero/equal values).
+3. If it survives, argue by exchange: "any optimal answer can be rewritten to start with my choice."</p>
+<hr />
+<h2>D. Time and Space Complexity</h2>
+<table>
+<thead>
+<tr>
+<th>Problem</th>
+<th>Time</th>
+<th>Space</th>
+<th>Dominant cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Coin change (greedy)</td>
+<td>O(d log d)</td>
+<td>O(d)</td>
+<td>sorting denominations</td>
+</tr>
+<tr>
+<td>Assign cookies</td>
+<td>O(n log n + m log m)</td>
+<td>O(n + m)</td>
+<td>two sorts</td>
+</tr>
+<tr>
+<td>Activity selection</td>
+<td>O(n log n)</td>
+<td>O(n)</td>
+<td>sort by finish</td>
+</tr>
+<tr>
+<td>Jump game</td>
+<td>O(n)</td>
+<td>O(1)</td>
+<td>single scan</td>
+</tr>
+<tr>
+<td>Stock II</td>
+<td>O(n)</td>
+<td>O(1)</td>
+<td>single scan</td>
+</tr>
+<tr>
+<td>Minimum platforms</td>
+<td>O(n log n)</td>
+<td>O(n)</td>
+<td>two sorts</td>
+</tr>
+<tr>
+<td>Job sequencing</td>
+<td>O(n log n + n*D)</td>
+<td>O(n + D)</td>
+<td>sort + slot search (D = max deadline)</td>
+</tr>
+<tr>
+<td>Gas station</td>
+<td>O(n)</td>
+<td>O(1)</td>
+<td>single scan</td>
+</tr>
+<tr>
+<td>Non-overlapping intervals</td>
+<td>O(n log n)</td>
+<td>O(n)</td>
+<td>sort by end</td>
+</tr>
+<tr>
+<td>Optimal merge patterns</td>
+<td>O(n log n)</td>
+<td>O(n)</td>
+<td>min-heap operations</td>
+</tr>
+</tbody>
+</table>
+<p>Rule of thumb: if the greedy rule needs an order, expect O(n log n) from sorting; if it only needs a running value, expect O(n).</p>
+<hr />
+<h2>E. Problems for Practice</h2>
+<table>
+<thead>
+<tr>
+<th>No</th>
+<th>Title</th>
+<th>Difficulty</th>
+<th>Concept</th>
+<th>Filename</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Minimum Coins (Indian Denominations)</td>
+<td>Easy</td>
+<td>Largest-first greedy and its counterexample</td>
+<td><code>01_coin_change_indian.py</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Assign Cookies</td>
+<td>Easy</td>
+<td>Sort both sides, two pointers</td>
+<td><code>02_assign_cookies.py</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Activity Selection</td>
+<td>Easy</td>
+<td>Earliest finish time rule</td>
+<td><code>03_activity_selection.py</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Jump Game</td>
+<td>Easy</td>
+<td>Track farthest reachable index</td>
+<td><code>04_jump_game.py</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Best Time to Buy and Sell Stock II</td>
+<td>Easy</td>
+<td>Collect every upward step</td>
+<td><code>05_best_time_to_buy_sell_stock_ii.py</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Minimum Railway Platforms</td>
+<td>Medium</td>
+<td>Two sorted lists swept together</td>
+<td><code>06_minimum_platforms.py</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Job Sequencing with Deadlines</td>
+<td>Medium</td>
+<td>Profit-first with latest free slot</td>
+<td><code>07_job_sequencing_with_deadlines.py</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>Gas Station (Circular Tour)</td>
+<td>Medium</td>
+<td>Running tank with reset</td>
+<td><code>08_gas_station.py</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>Non-overlapping Intervals</td>
+<td>Medium</td>
+<td>Reuse activity selection (removals)</td>
+<td><code>09_non_overlapping_intervals.py</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>Optimal Merge Patterns</td>
+<td>Medium</td>
+<td>Min-heap, merge two smallest</td>
+<td><code>10_optimal_merge_patterns.py</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3>Problem 1 - Minimum Coins (Indian Denominations)</h3>
+<p><strong>Statement.</strong> Given a list of denominations and an amount, return the fewest coins/notes that add up to the amount by always taking the largest denomination that still fits. Also show that this rule fails for an arbitrary system such as <code>[1, 3, 4]</code>.</p>
+<p><strong>Example.</strong></p>
+<pre><code>denominations = [500, 200, 100, 50, 20, 10, 5, 2, 1], amount = 289
+Output: [200, 50, 20, 10, 5, 2, 2]  -&gt; 7 coins
+
+denominations = [1, 3, 4], amount = 6
+Greedy gives [4, 1, 1] (3 coins), but the true optimum is 3 + 3 (2 coins)
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Amount 0 returns an empty list. An amount that cannot be formed (coins <code>[5, 10]</code>, amount 3) returns <code>None</code>. A negative amount is an error.</p>
+<p><strong>Hints.</strong>
+- Order the denominations from largest to smallest first.
+- For each denomination, how many fit into what is left? One division with remainder answers that.
+- What should you do if you finish all denominations and still have a remainder?
+- To prove the rule wrong for <code>[1, 3, 4]</code>, write a tiny slow checker that tries all combinations (a table of best answers for every smaller amount).</p>
+<hr />
+<h3>Problem 2 - Assign Cookies</h3>
+<p><strong>Statement.</strong> Child <code>i</code> has greed <code>g[i]</code> (minimum cookie size that satisfies them). Cookie <code>j</code> has size <code>s[j]</code>. Each cookie goes to at most one child and each child gets at most one cookie. Return the maximum number of satisfied children.</p>
+<p><strong>Example.</strong></p>
+<pre><code>greed = [1, 2, 3], cookies = [1, 1]   -&gt; 1
+greed = [1, 2],    cookies = [1, 2, 3] -&gt; 2
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> No children or no cookies gives 0. All cookies too small gives 0. Extra cookies are simply unused.</p>
+<p><strong>Hints.</strong>
+- Which child is easiest to satisfy? Which cookie is the cheapest way to do it?
+- Sort both lists ascending (write your own sort).
+- Walk through the cookies once and keep a pointer to the first unsatisfied child.
+- When a cookie is too small for the current child, it is too small for every greedier child too.</p>
+<hr />
+<h3>Problem 3 - Activity Selection</h3>
+<p><strong>Statement.</strong> Given meetings as <code>(start, finish)</code> pairs and one room, choose the maximum number of meetings that do not overlap. A meeting may begin exactly when another ends.</p>
+<p><strong>Example.</strong></p>
+<pre><code>[(1,4),(3,5),(0,6),(5,7),(3,9),(5,9),(6,10),(8,11),(8,12),(2,14),(12,16)]
+Chosen: [(1,4),(5,7),(8,11),(12,16)] -&gt; 4
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list gives nothing. Touching meetings (end 5, start 5) are allowed. Identical meetings: only one can be chosen.</p>
+<p><strong>Hints.</strong>
+- Test three candidate rules (earliest start, shortest duration, earliest finish) on a 2-to-3 meeting input. Only one survives.
+- After sorting by the winning key, you only need to remember one number: the finish time of the last chosen meeting.
+- Decide carefully between <code>&gt;</code> and <code>&gt;=</code> when comparing start with that number.</p>
+<hr />
+<h3>Problem 4 - Jump Game</h3>
+<p><strong>Statement.</strong> <code>nums[i]</code> is the maximum jump length from index <code>i</code>. Starting at index 0, decide whether the last index is reachable.</p>
+<p><strong>Example.</strong></p>
+<pre><code>[2, 3, 1, 1, 4] -&gt; True
+[3, 2, 1, 0, 4] -&gt; False
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> A single element is already at the end. <code>[0]</code> is True but <code>[0, 1]</code> is False. A zero in the middle is harmless if an earlier jump passes over it. Empty input is False in this solution.</p>
+<p><strong>Hints.</strong>
+- Do not explore paths. Keep a single number: the farthest index you could possibly reach so far.
+- Every index up to that number is reachable, so scanning left to right is enough.
+- When can you declare failure? When the index you are standing on is beyond your farthest reach.
+- You can stop early once the farthest reach touches the last index.</p>
+<hr />
+<h3>Problem 5 - Best Time to Buy and Sell Stock II</h3>
+<p><strong>Statement.</strong> <code>prices[i]</code> is the price on day <code>i</code>. You may buy and sell as many times as you like but hold at most one share at a time. Return the maximum profit.</p>
+<p><strong>Example.</strong></p>
+<pre><code>[7, 1, 5, 3, 6, 4] -&gt; 7   (buy 1 sell 5, buy 3 sell 6)
+[1, 2, 3, 4, 5]    -&gt; 4
+[7, 6, 4, 3, 1]    -&gt; 0
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list or one price gives 0. Strictly falling prices give 0. Strictly rising prices give last minus first. Equal prices give 0.</p>
+<p><strong>Hints.</strong>
+- A long climb from low to high equals the sum of its day-to-day climbs.
+- Look only at the difference between today and yesterday. When is it worth keeping?
+- Do you need to remember the buy day to compute the profit? (No.)</p>
+<hr />
+<h3>Problem 6 - Minimum Railway Platforms</h3>
+<p><strong>Statement.</strong> Given arrival and departure times of trains (24-hour style, 930 = 9:30), find the minimum number of platforms so that no train waits. A train arriving exactly when another departs needs its own platform.</p>
+<p><strong>Example.</strong></p>
+<pre><code>arrivals   = [900, 940, 950, 1100, 1500, 1800]
+departures = [910, 1200, 1120, 1130, 1900, 2000]
+Output: 3
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty input gives 0. Arrival equal to a departure counts both trains at once. All overlapping trains give <code>n</code>.</p>
+<p><strong>Hints.</strong>
+- The question is really "what is the maximum number of trains present at the same moment?"
+- Does the pairing of a train's arrival with its own departure matter for that count? Not really, so the two lists can be sorted separately.
+- Use two pointers: if the next event is an arrival, one more platform is in use; otherwise one is freed.
+- For ties, decide which event is processed first, and justify it from the statement.</p>
+<hr />
+<h3>Problem 7 - Job Sequencing with Deadlines</h3>
+<p><strong>Statement.</strong> Each job takes one unit of time, has a deadline (latest slot, slots start at 1) and a profit earned only if finished by the deadline. Schedule jobs to maximise total profit.</p>
+<p><strong>Example.</strong></p>
+<pre><code>jobs (name, deadline, profit) = [(&quot;a&quot;,2,100),(&quot;b&quot;,1,19),(&quot;c&quot;,2,27),(&quot;d&quot;,1,25),(&quot;e&quot;,3,15)]
+Slot 1: c, Slot 2: a, Slot 3: e   -&gt; total profit 142
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Deadlines may exceed the number of jobs (use slots up to the maximum deadline). Empty list gives profit 0. Equal profits keep input order.</p>
+<p><strong>Hints.</strong>
+- Consider jobs from the most profitable down. Is skipping a high-profit job ever better than fitting it?
+- Where should a chosen job go: as early as possible or as late as possible? Think about whom you want to leave room for.
+- Use an array with one entry per time slot and scan downward from the job's deadline.
+- For a faster version, look up "union-find for latest free slot" or "min-heap on profits".</p>
+<hr />
+<h3>Problem 8 - Gas Station (Circular Tour)</h3>
+<p><strong>Statement.</strong> <code>gas[i]</code> is the fuel gained at station <code>i</code>; <code>cost[i]</code> is the fuel needed to reach the next station. Starting with an empty tank, return the index of the station from which you can complete the full circle, or -1.</p>
+<p><strong>Example.</strong></p>
+<pre><code>gas = [1, 2, 3, 4, 5], cost = [3, 4, 5, 1, 2] -&gt; 3
+gas = [2, 3, 4],       cost = [3, 4, 3]       -&gt; -1
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> If total gas is less than total cost the answer is -1. A single station works when <code>gas &gt;= cost</code>.</p>
+<p><strong>Hints.</strong>
+- Define <code>diff[i] = gas[i] - cost[i]</code> and keep a running tank.
+- If the tank goes negative at station <code>i</code>, can any station between the start and <code>i</code> be a better start? Argue why not.
+- Keep a second running total across the whole circle. What does its sign tell you about existence of an answer?
+- Aim for one pass instead of trying every start.</p>
+<hr />
+<h3>Problem 9 - Non-overlapping Intervals</h3>
+<p><strong>Statement.</strong> Given intervals <code>[start, end]</code>, return the minimum number of intervals to remove so the rest do not overlap. Intervals that only touch at an endpoint do not overlap.</p>
+<p><strong>Example.</strong></p>
+<pre><code>[[1,2],[2,3],[3,4],[1,3]] -&gt; 1
+[[1,2],[1,2],[1,2]]       -&gt; 2
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list gives 0. Identical intervals: all but one are removed. Touching intervals are not overlaps.</p>
+<p><strong>Hints.</strong>
+- Minimum removals = total intervals minus the maximum you can keep. Does the second quantity look familiar?
+- Sort by END time, not start time.
+- Walk once with a variable for the end of the last kept interval and count the ones you must drop.</p>
+<hr />
+<h3>Problem 10 - Optimal Merge Patterns</h3>
+<p><strong>Statement.</strong> You have files of given sizes. Merging two files of sizes <code>a</code> and <code>b</code> costs <code>a + b</code> and produces one file of size <code>a + b</code>. Merge everything into one file at minimum total cost.</p>
+<p><strong>Example.</strong></p>
+<pre><code>sizes = [20, 30, 10, 5, 30]
+Merges: 5+10=15, 15+20=35, 30+30=60, 35+60=95  -&gt; total cost 205
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Zero or one file costs 0. Two files cost their sum. Equal sizes are fine.</p>
+<p><strong>Hints.</strong>
+- A file merged early is counted again in every later merge above it. So who should be merged first, the small or the large?
+- You need "give me the two smallest right now" repeatedly. Which data structure does that cheaply? (Python: the <code>heapq</code> module.)
+- After each merge, the new file goes back into the structure.
+- This same pattern builds Huffman codes.</p>
+<hr />
+<h2>F. Installation Requirements</h2>
+<ul>
+<li><strong>Python version:</strong> 3.8 or newer.</li>
+<li><strong>Packages:</strong> none to install. Everything uses the Python standard library only (for example <code>heapq</code> in problem 10 is part of the standard library).</li>
+<li><strong>NumPy:</strong> not required for this topic.</li>
+<li><strong>Extra installation:</strong> not necessary.</li>
+</ul>
+<hr />
+<h2>G. How to Run the Files</h2>
+<ol>
+<li>Open a terminal (Windows: Command Prompt or PowerShell; macOS/Linux: Terminal).</li>
+<li>Check Python is installed:
+   <code>bash
+   python --version      # Windows
+   python3 --version     # Linux / macOS</code>
+   On Windows, if <code>python</code> is not found, try <code>py --version</code> and use <code>py</code> in place of <code>python</code> below.</li>
+<li>Go to the topic folder and run a file:</li>
+</ol>
+<p><strong>Windows</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice\18-Greedy-Algorithm
+python 01_coin_change_indian.py
+:: or
+py 01_coin_change_indian.py
+</code></pre>
+<p><strong>Linux / macOS</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice/18-Greedy-Algorithm
+python3 01_coin_change_indian.py
+</code></pre>
+<p>Each file is a standalone program: it imports nothing from its sibling files and needs no input files.</p>
+<hr />
+<h2>H. Revision Notes</h2>
+<p><strong>Key concepts</strong>
+- Greedy = pick the best local option, never undo. Correct only if it has the greedy-choice property.
+- Interval problems: sort by END time. Resource counting problems: sort starts and ends separately. Value-based problems: sort by profit or ratio.
+- Running-variable greedy (jump game, stock II, gas station) needs no sort and runs in O(n).
+- A min-heap is the greedy engine when you repeatedly need the current smallest item (merge patterns, Huffman).
+- Exchange argument is the standard proof.</p>
+<p><strong>Common mistakes</strong>
+- Using <code>&gt;</code> instead of <code>&gt;=</code> when intervals may touch (or the reverse when touching means overlap).
+- Sorting intervals by start time when the rule needs end time.
+- Assuming largest-coin-first works for every coin system (it does not: <code>[1, 3, 4]</code>).
+- Forgetting empty input, a single element, or the "impossible" case (<code>None</code> or -1).
+- Placing a job in the earliest slot instead of the latest free slot.</p>
+<p><strong>Interview tips</strong>
+- Say the greedy rule out loud, then offer a quick counterexample test before coding.
+- Mention the exchange argument in one sentence; it shows you understand why it works.
+- If greedy fails on a counterexample, pivot to DP and say so.
+- State complexity: sort cost plus scan cost.</p>

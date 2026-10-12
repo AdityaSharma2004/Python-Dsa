@@ -1,0 +1,485 @@
+<h1>05 - Stack</h1>
+<p>Learn Last-In-First-Out storage and the problems it solves: matching, undo, expression handling and monotonic-stack tricks.</p>
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#a-topic-introduction">A. Topic Introduction</a></li>
+<li><a href="#b-core-concepts">B. Core Concepts</a></li>
+<li><a href="#c-how-it-works">C. How It Works</a></li>
+<li><a href="#d-time-and-space-complexity">D. Time and Space Complexity</a></li>
+<li><a href="#e-problems-for-practice">E. Problems for Practice</a></li>
+<li><a href="#f-installation-requirements">F. Installation Requirements</a></li>
+<li><a href="#g-how-to-run-the-files">G. How to Run the Files</a></li>
+<li><a href="#h-revision-notes">H. Revision Notes</a></li>
+</ul>
+<hr />
+<h2>A. Topic Introduction</h2>
+<p><strong>What it is.</strong> A stack is a collection where you add and remove only at one end, called the top. The last item pushed is the first item popped: Last-In-First-Out (LIFO).</p>
+<p><strong>Why it matters in DSA.</strong> Any problem that needs "remember the most recent unfinished thing" is a stack problem: matching brackets, undo, expression evaluation, and the monotonic-stack family (next greater element, histogram).</p>
+<p><strong>Where it is used.</strong> The function call stack, undo/redo in editors, the browser back button, parsing expressions and syntax checking in compilers.</p>
+<p><strong>Everyday analogy.</strong> A pile of plates: you put a plate on top and take a plate from the top. You never pull from the bottom.</p>
+<p>If you know PHP: <code>array_push($arr, $x)</code> and <code>array_pop($arr)</code> already behave as a stack. In Python a <code>list</code> with <code>append()</code> and <code>pop()</code> is the same thing.</p>
+<hr />
+<h2>B. Core Concepts</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Push</td>
+<td>Add an item on top.</td>
+</tr>
+<tr>
+<td>Pop</td>
+<td>Remove and return the top item.</td>
+</tr>
+<tr>
+<td>Peek / top</td>
+<td>Look at the top item without removing it.</td>
+</tr>
+<tr>
+<td>LIFO</td>
+<td>Last in, first out.</td>
+</tr>
+<tr>
+<td>Underflow</td>
+<td>Popping or peeking an empty stack.</td>
+</tr>
+<tr>
+<td>Monotonic stack</td>
+<td>A stack kept in increasing or decreasing order to answer "next greater/smaller" questions.</td>
+</tr>
+<tr>
+<td>Postfix (RPN)</td>
+<td>Operators come after operands: <code>2 3 +</code>.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Picture</strong></p>
+<pre><code class="language-text">push(10) push(20) push(30)         pop() -&gt; 30
+
+ |    |     |    |     |  30 |      |    |
+ |    |     | 20 |     |  20 |      | 20 |
+ | 10 |     | 10 |     |  10 |      | 10 |
+ +----+     +----+     +-----+      +----+
+</code></pre>
+<pre><code class="language-mermaid">flowchart TB
+    T[&quot;top: 30&quot;] --&gt; M[&quot;20&quot;] --&gt; Bt[&quot;bottom: 10&quot;]
+</code></pre>
+<p><strong>Python choice.</strong> Use a list with <code>append</code> and <code>pop</code> (both O(1) at the end). Avoid <code>insert(0, x)</code> because it is O(n).</p>
+<hr />
+<h2>C. How It Works</h2>
+<p><strong>Dry run 1: balanced brackets for <code>{[()]}</code></strong></p>
+<table>
+<thead>
+<tr>
+<th>Char</th>
+<th>Action</th>
+<th>Stack</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>{</code></td>
+<td>push</td>
+<td><code>{</code></td>
+</tr>
+<tr>
+<td><code>[</code></td>
+<td>push</td>
+<td><code>{ [</code></td>
+</tr>
+<tr>
+<td><code>(</code></td>
+<td>push</td>
+<td><code>{ [ (</code></td>
+</tr>
+<tr>
+<td><code>)</code></td>
+<td>top is <code>(</code>, pop</td>
+<td><code>{ [</code></td>
+</tr>
+<tr>
+<td><code>]</code></td>
+<td>top is <code>[</code>, pop</td>
+<td><code>{</code></td>
+</tr>
+<tr>
+<td><code>}</code></td>
+<td>top is <code>{</code>, pop</td>
+<td>empty</td>
+</tr>
+</tbody>
+</table>
+<p>Empty at the end means balanced. <code>([)]</code> fails: when <code>)</code> arrives, the top is <code>[</code>.</p>
+<p><strong>Dry run 2: postfix <code>2 3 4 * +</code></strong></p>
+<pre><code class="language-text">2 -&gt; [2]
+3 -&gt; [2, 3]
+4 -&gt; [2, 3, 4]
+*  -&gt; pop 4, pop 3, push 12   -&gt; [2, 12]
++  -&gt; pop 12, pop 2, push 14  -&gt; [14]
+</code></pre>
+<p>Careful: the first popped value is the RIGHT operand (matters for <code>-</code> and <code>/</code>).</p>
+<p><strong>Dry run 3: next greater element for <code>[4, 5, 2, 25]</code></strong> (stack holds indices still waiting for an answer)</p>
+<table>
+<thead>
+<tr>
+<th>i</th>
+<th>value</th>
+<th>Stack before</th>
+<th>Action</th>
+<th>Answers so far</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>4</td>
+<td>[]</td>
+<td>push 0</td>
+<td>-</td>
+</tr>
+<tr>
+<td>1</td>
+<td>5</td>
+<td>[0]</td>
+<td>5 &gt; 4: answer[0]=5, push 1</td>
+<td>[5,-,-,-]</td>
+</tr>
+<tr>
+<td>2</td>
+<td>2</td>
+<td>[1]</td>
+<td>push 2</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>25</td>
+<td>[1,2]</td>
+<td>answer[2]=25, answer[1]=25, push 3</td>
+<td>[5,25,25,-]</td>
+</tr>
+</tbody>
+</table>
+<p>Whatever remains gets -1. Each index is pushed and popped once: O(n).</p>
+<p><strong>Dry run 4: min stack.</strong> Keep a second stack of minimums; push to it when the new value is <code>&lt;=</code> the current minimum, pop from it when the popped value equals the minimum.</p>
+<hr />
+<h2>D. Time and Space Complexity</h2>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Time</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>push / pop / peek / is_empty / size</td>
+<td>O(1)</td>
+<td>list end operations</td>
+</tr>
+<tr>
+<td>Reverse a string with a stack</td>
+<td>O(n) time, O(n) space</td>
+<td></td>
+</tr>
+<tr>
+<td>Balanced brackets</td>
+<td>O(n) time, O(n) space</td>
+<td>worst case all openers</td>
+</tr>
+<tr>
+<td>Next greater / daily temperatures</td>
+<td>O(n)</td>
+<td>each element pushed and popped once</td>
+</tr>
+<tr>
+<td>Min stack <code>get_min</code></td>
+<td>O(1)</td>
+<td>extra O(n) space</td>
+</tr>
+<tr>
+<td>Postfix evaluation / infix to postfix</td>
+<td>O(n)</td>
+<td></td>
+</tr>
+<tr>
+<td>Largest rectangle in histogram</td>
+<td>O(n)</td>
+<td>brute force is O(n^2)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>E. Problems for Practice</h2>
+<table>
+<thead>
+<tr>
+<th>No</th>
+<th>Title</th>
+<th>Difficulty</th>
+<th>Concept</th>
+<th>Python File</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Stack Implementation</td>
+<td>Easy</td>
+<td>LIFO class, push/pop/peek</td>
+<td><code>01_stack_implementation.py</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Reverse a String Using a Stack</td>
+<td>Easy</td>
+<td>Push all, pop all</td>
+<td><code>02_reverse_string_using_stack.py</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Balanced Parentheses</td>
+<td>Easy</td>
+<td>Matching pairs with a stack</td>
+<td><code>03_balanced_parentheses.py</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Undo and Redo Operations</td>
+<td>Medium</td>
+<td>Two stacks, history management</td>
+<td><code>04_undo_operations.py</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Next Greater Element</td>
+<td>Medium</td>
+<td>Monotonic stack</td>
+<td><code>05_next_greater_element.py</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Min Stack</td>
+<td>Medium</td>
+<td>Auxiliary stack, O(1) minimum</td>
+<td><code>06_min_stack.py</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Postfix Expression Evaluation</td>
+<td>Medium</td>
+<td>Operand stack, RPN</td>
+<td><code>07_postfix_evaluation.py</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>Infix to Postfix Conversion</td>
+<td>Medium</td>
+<td>Operator precedence stack (shunting yard)</td>
+<td><code>08_infix_to_postfix.py</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>Daily Temperatures</td>
+<td>Medium</td>
+<td>Monotonic stack, distance to next warmer day</td>
+<td><code>09_daily_temperatures.py</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>Largest Rectangle in a Histogram</td>
+<td>Medium</td>
+<td>Monotonic stack, area calculation</td>
+<td><code>10_largest_rectangle_histogram.py</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Problem 1 - Stack Implementation (<code>01_stack_implementation.py</code>)</h3>
+<p><strong>Statement.</strong> Build a stack class with <code>push</code>, <code>pop</code>, <code>peek</code>, <code>is_empty</code> and <code>size</code>. Popping or peeking an empty stack must report an error.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">push 10, 20, 30 -&gt; [10, 20, 30]
+peek() -&gt; 30, pop() -&gt; 30, pop() -&gt; 20, size() -&gt; 1
+pop() on empty -&gt; Stack is empty
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Pop or peek on an empty stack; pushing <code>None</code> or duplicates; push again after emptying.</p>
+<p><strong>Hints.</strong>
+- Store items in a Python list and use only its end.
+- Check <code>is_empty()</code> before pop and peek.
+- Raise a clear error rather than failing silently.</p>
+<h3>Problem 2 - Reverse a String Using a Stack (<code>02_reverse_string_using_stack.py</code>)</h3>
+<p><strong>Statement.</strong> Reverse a whole string with a stack, then reverse only the letters of each word while keeping the word order.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">&quot;Data Structures&quot;
+Reversed      : serutcurtS ataD
+Words reversed: ataD serutcurtS
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty string; single character; multiple, leading or trailing spaces; palindromes.</p>
+<p><strong>Hints.</strong>
+- Push every character, then pop them to build the result.
+- For words, flush the stack each time you meet a space.
+- Flush once more at the end of the string.</p>
+<h3>Problem 3 - Balanced Parentheses (<code>03_balanced_parentheses.py</code>)</h3>
+<p><strong>Statement.</strong> Given a string with <code>()</code>, <code>[]</code> and <code>{}</code> (and other characters), decide whether every opening bracket is closed by the correct type in the correct order.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">&quot;{[()]}&quot; -&gt; balanced
+&quot;([)]&quot; -&gt; NOT balanced
+&quot;((&quot; -&gt; NOT balanced
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty string (balanced); only closers; only openers; wrong order like <code>([)]</code>; non-bracket characters.</p>
+<p><strong>Hints.</strong>
+- Push openers; on a closer compare with the top.
+- A closer with an empty stack is an immediate failure.
+- At the end the stack must be empty.</p>
+<h3>Problem 4 - Undo and Redo Operations (<code>04_undo_operations.py</code>)</h3>
+<p><strong>Statement.</strong> Simulate a small text editor with <code>type</code>, <code>undo</code> and <code>redo</code>. Undo reverses the latest change; redo re-applies it unless a new edit happened after the undo.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">type 'Hello', type ' World', undo, undo, redo
+-&gt; 'Hello World', 'Hello', '', 'Hello'
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Undo with no history; redo with nothing undone; redo cleared after a new edit; undo repeatedly until empty.</p>
+<p><strong>Hints.</strong>
+- Use an undo stack and a redo stack.
+- Undo moves an action from the undo stack to the redo stack.
+- Any new edit clears the redo stack.</p>
+<h3>Problem 5 - Next Greater Element (<code>05_next_greater_element.py</code>)</h3>
+<p><strong>Statement.</strong> For every element find the first element to its right that is strictly greater, or -1 if none exists.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[4, 5, 2, 25] -&gt; [5, 25, 25, -1]
+[3, 3, 3] -&gt; [-1, -1, -1]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty array; equal values (strictly greater required); strictly decreasing array (all -1); single element.</p>
+<p><strong>Hints.</strong>
+- Keep a stack of indices that are still waiting for an answer.
+- While the current value beats the stack top, resolve the top.
+- Indices left at the end have no greater element.</p>
+<h3>Problem 6 - Min Stack (<code>06_min_stack.py</code>)</h3>
+<p><strong>Statement.</strong> Design a stack with <code>push</code>, <code>pop</code>, <code>top</code> and <code>get_min</code>, where <code>get_min</code> returns the smallest current element in constant time.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">push 5, 3, 7, 3
+get_min after each push: 5, 3, 3, 3
+pop x4: min 3, 3, 5, empty
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Duplicate minimums (why <code>&lt;=</code> matters); pop/top/get_min on an empty stack; increasing and decreasing pushes.</p>
+<p><strong>Hints.</strong>
+- Keep a second stack that records minimums.
+- Push onto it when the new value is less than or equal to its top.
+- Pop from it only when the popped value equals the current minimum.</p>
+<h3>Problem 7 - Postfix Expression Evaluation (<code>07_postfix_evaluation.py</code>)</h3>
+<p><strong>Statement.</strong> Evaluate a postfix expression such as <code>2 3 4 * +</code>. Support <code>+ - * /</code> and report invalid expressions.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">&quot;2 3 4 * +&quot; = 14
+&quot;10 2 /&quot; = 5.0
+&quot;1 +&quot; -&gt; error: not enough operands
+&quot;4 0 /&quot; -&gt; error: division by zero
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Too few operands; leftover operands; division by zero; unknown token; empty expression; operand order for <code>-</code> and <code>/</code>.</p>
+<p><strong>Hints.</strong>
+- Push numbers; on an operator pop two operands.
+- The first value popped is the right-hand operand.
+- At the end exactly one value must remain.</p>
+<h3>Problem 8 - Infix to Postfix Conversion (<code>08_infix_to_postfix.py</code>)</h3>
+<p><strong>Statement.</strong> Convert an infix expression like <code>a+b*c</code> into postfix. Support <code>+ - * / ^</code> and parentheses; <code>^</code> is right-associative.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">a+b*c -&gt; abc*+
+(a+b)*c -&gt; ab+c*
+a^b^c -&gt; abc^^
+a+(b -&gt; error: mismatched parentheses
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Mismatched parentheses; nested parentheses; chained <code>^</code>; equal-precedence operators (left to right); single operand.</p>
+<p><strong>Hints.</strong>
+- Operands go straight to the output.
+- Pop operators of higher (or equal, for left-associative) precedence before pushing a new one.
+- A closing bracket pops until its opening bracket.</p>
+<h3>Problem 9 - Daily Temperatures (<code>09_daily_temperatures.py</code>)</h3>
+<p><strong>Statement.</strong> Given daily temperatures, return for each day how many days you must wait for a warmer one, or 0 if none.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[73, 74, 75, 71, 69, 72, 76, 73] -&gt; [1, 1, 4, 2, 1, 1, 0, 0]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty input; equal temperatures (not warmer); strictly decreasing list; single day.</p>
+<p><strong>Hints.</strong>
+- Same idea as next greater element, but store the distance.
+- Keep indices on the stack, not temperatures.
+- Answer for a popped index is the current index minus that index.</p>
+<h3>Problem 10 - Largest Rectangle in a Histogram (<code>10_largest_rectangle_histogram.py</code>)</h3>
+<p><strong>Statement.</strong> Given bar heights (each of width 1), find the area of the largest rectangle that fits inside the bars.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[2, 1, 5, 6, 2, 3] -&gt; 10
+[2, 4] -&gt; 4
+[] -&gt; 0
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list; single bar; all equal heights; strictly increasing or decreasing; zero-height bars.</p>
+<p><strong>Hints.</strong>
+- Keep a stack of indices with increasing heights.
+- When a lower bar arrives, pop and compute the area using the popped height.
+- Width runs from the new stack top (exclusive) to the current index (exclusive); flush the stack at the end.</p>
+<hr />
+<h2>F. Installation Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python version</td>
+<td>Python 3.8 or newer</td>
+</tr>
+<tr>
+<td>Packages</td>
+<td>None. Standard library only</td>
+</tr>
+<tr>
+<td>Extra installation</td>
+<td>Nothing to install beyond Python itself</td>
+</tr>
+</tbody>
+</table>
+<p>Check your installation with <code>python --version</code> (see section G).</p>
+<hr />
+<h2>G. How to Run the Files</h2>
+<ol>
+<li>Open a terminal: <strong>Windows</strong> - press <code>Win + R</code>, type <code>cmd</code> (or open PowerShell / VS Code terminal). <strong>Linux/macOS</strong> - open Terminal.</li>
+<li>Verify Python:
+   <code>bash
+   python --version      # Windows (or: py --version)
+   python3 --version     # Linux / macOS</code></li>
+<li>Move into the topic folder and run a file.</li>
+</ol>
+<p><strong>Windows</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice\05-Stack
+python 01_stack_implementation.py
+</code></pre>
+<p>If <code>python</code> is not recognised, use the Python launcher: <code>py 01_stack_implementation.py</code>.</p>
+<p><strong>Linux / macOS</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice/05-Stack
+python3 01_stack_implementation.py
+</code></pre>
+<p>Every file is a standalone program: it needs no other file and no internet.</p>
+<hr />
+<h2>H. Revision Notes</h2>
+<p><strong>Key concepts</strong>
+- LIFO: the most recent item is handled first.
+- Use a list: <code>append</code> to push, <code>pop</code> to pop, <code>[-1]</code> to peek.
+- Stack = remember unfinished work (brackets, undo, recursion).
+- Monotonic stack answers next-greater/smaller style questions in O(n).
+- Postfix needs only a stack; infix needs a stack for operators.</p>
+<p><strong>Common mistakes</strong>
+- Popping from an empty stack.
+- Forgetting to check that the stack is empty at the end (brackets).
+- Swapping operand order for <code>-</code> and <code>/</code>.
+- Using <code>&lt;</code> instead of <code>&lt;=</code> in the min stack and breaking with duplicates.
+- Storing values instead of indices when distances are needed.</p>
+<p><strong>Interview tips</strong>
+- Say "I will use a stack because the latest unmatched item matters."
+- For "next greater" problems, mention the monotonic stack and its O(n) amortised cost.
+- State the space cost: usually O(n) in the worst case.
+- Relate recursion to the call stack and mention the recursion limit.
+- Test with empty input and a single element.</p>

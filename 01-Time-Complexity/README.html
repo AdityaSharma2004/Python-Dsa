@@ -1,0 +1,481 @@
+<h1>01 - Time Complexity</h1>
+<p>Learn how to measure how the cost of an algorithm grows as its input grows, using Big O notation. All ten programs count "steps" so you can see the growth with your own eyes.</p>
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#a-topic-introduction">A. Topic Introduction</a></li>
+<li><a href="#b-core-concepts">B. Core Concepts</a></li>
+<li><a href="#c-how-it-works">C. How It Works</a></li>
+<li><a href="#d-time-and-space-complexity">D. Time and Space Complexity</a></li>
+<li><a href="#e-problems-for-practice">E. Problems for Practice</a></li>
+<li><a href="#f-installation-requirements">F. Installation Requirements</a></li>
+<li><a href="#g-how-to-run-the-files">G. How to Run the Files</a></li>
+<li><a href="#h-revision-notes">H. Revision Notes</a></li>
+</ul>
+<hr />
+<h2>A. Topic Introduction</h2>
+<p><strong>What it is.</strong> Time complexity describes how the number of basic steps an algorithm performs grows when the input size <code>n</code> grows. Space complexity does the same for extra memory. We write it with Big O notation, for example <code>O(n)</code> or <code>O(n^2)</code>.</p>
+<p><strong>Why it matters in DSA.</strong> Two programs can give the same answer, yet one finishes in a blink and the other takes hours on big data. Complexity is the common language used to compare solutions, and every interviewer asks "what is the time and space complexity?".</p>
+<p><strong>Where it is used.</strong> Choosing between a database index lookup and a full table scan, deciding whether a loop over a million Eloquent records is safe, designing search features, sorting large reports, and avoiding timeouts in APIs.</p>
+<p><strong>Everyday analogy.</strong> Finding a name in a phone book:
+- Reading every page from the start is linear, <code>O(n)</code>.
+- Opening the middle and discarding half each time is logarithmic, <code>O(log n)</code>.
+- Comparing every person with every other person to find twins is quadratic, <code>O(n^2)</code>.</p>
+<p>If you know Laravel: <code>$collection-&gt;first()</code> is <code>O(1)</code>, <code>$collection-&gt;contains()</code> is <code>O(n)</code>, and a <code>foreach</code> inside a <code>foreach</code> over the same collection is <code>O(n^2)</code>.</p>
+<hr />
+<h2>B. Core Concepts</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Input size <code>n</code></td>
+<td>The quantity that grows (items in a list, digits of a number, ...).</td>
+</tr>
+<tr>
+<td>Step / basic operation</td>
+<td>One comparison, assignment or arithmetic action.</td>
+</tr>
+<tr>
+<td>Big O <code>O(...)</code></td>
+<td>Upper bound on growth (usually the worst case).</td>
+</tr>
+<tr>
+<td>Omega <code>Omega(...)</code></td>
+<td>Lower bound (usually the best case).</td>
+</tr>
+<tr>
+<td>Theta <code>Theta(...)</code></td>
+<td>Tight bound (growth is the same from above and below).</td>
+</tr>
+<tr>
+<td>Best / average / worst case</td>
+<td>Cheapest, typical and most expensive input of the same size.</td>
+</tr>
+<tr>
+<td>Space complexity</td>
+<td>Extra memory used, not counting the input itself.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Rules for simplifying Big O</strong>
+1. Drop constants: <code>3n</code> and <code>n + 50</code> are both <code>O(n)</code>.
+2. Keep only the fastest-growing term: <code>n^2 + n</code> is <code>O(n^2)</code>.
+3. Sequential blocks add: <code>O(n) + O(n)</code> is <code>O(n)</code>.
+4. Nested blocks multiply: a loop of <code>n</code> inside a loop of <code>n</code> is <code>O(n * n)</code>.
+5. Halving the problem each step gives <code>log n</code>.</p>
+<p><strong>Growth picture (steps for n = 16)</strong></p>
+<pre><code class="language-text">O(1)        |#                                  1
+O(log n)    |####                               4
+O(n)        |################                   16
+O(n log n)  |################################################################  64
+O(n^2)      |(256 steps - off the chart)
+O(2^n)      |(65,536 steps - off the chart)
+</code></pre>
+<p><strong>Common classes from fast to slow</strong></p>
+<pre><code class="language-mermaid">flowchart LR
+    A[&quot;O(1)&quot;] --&gt; B[&quot;O(log n)&quot;] --&gt; C[&quot;O(n)&quot;] --&gt; D[&quot;O(n log n)&quot;] --&gt; E[&quot;O(n^2)&quot;] --&gt; F[&quot;O(n^3)&quot;] --&gt; G[&quot;O(2^n)&quot;]
+</code></pre>
+<hr />
+<h2>C. How It Works</h2>
+<p><strong>Dry run 1: counting a nested loop</strong></p>
+<pre><code class="language-text">for i in range(n):          # runs n times
+    for j in range(n):      # runs n times for every i
+        count += 1
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>n</th>
+<th>steps (n * n)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4</td>
+<td>16</td>
+</tr>
+<tr>
+<td>8</td>
+<td>64</td>
+</tr>
+<tr>
+<td>16</td>
+<td>256</td>
+</tr>
+</tbody>
+</table>
+<p>Doubling <code>n</code> makes the work four times bigger, so it is <code>O(n^2)</code>.</p>
+<p><strong>Dry run 2: a triangle loop (inner loop starts at <code>i</code>)</strong></p>
+<p>For <code>n = 4</code> the inner loop runs 4 + 3 + 2 + 1 = 10 times, which is <code>n(n+1)/2</code>. Dropping the constant 1/2 gives <code>O(n^2)</code>.</p>
+<p><strong>Dry run 3: halving</strong></p>
+<p><code>n = 16 -&gt; 8 -&gt; 4 -&gt; 2 -&gt; 1</code> takes 4 halvings, which is <code>log2(16)</code>. A loop whose variable doubles (<code>i = 1, 2, 4, 8, ...</code>) also runs <code>log n</code> times.</p>
+<p><strong>Dry run 4: why naive Fibonacci explodes</strong></p>
+<pre><code class="language-text">fib(4)
+ |-- fib(3)
+ |    |-- fib(2)
+ |    |    |-- fib(1)
+ |    |    `-- fib(0)
+ |    `-- fib(1)
+ `-- fib(2)            &lt;- fib(2) is computed AGAIN
+      |-- fib(1)
+      `-- fib(0)
+</code></pre>
+<p>Every call spawns two more, giving roughly <code>2^n</code> calls. Remembering answers (memoization) means each value is computed once, so the cost drops to <code>O(n)</code>.</p>
+<hr />
+<h2>D. Time and Space Complexity</h2>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Name</th>
+<th>Typical example</th>
+<th>n = 1,000 means about</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>O(1)</td>
+<td>Constant</td>
+<td>Index into a list</td>
+<td>1 step</td>
+</tr>
+<tr>
+<td>O(log n)</td>
+<td>Logarithmic</td>
+<td>Binary search</td>
+<td>10 steps</td>
+</tr>
+<tr>
+<td>O(n)</td>
+<td>Linear</td>
+<td>Scan a list once</td>
+<td>1,000 steps</td>
+</tr>
+<tr>
+<td>O(n log n)</td>
+<td>Linearithmic</td>
+<td>Merge sort</td>
+<td>10,000 steps</td>
+</tr>
+<tr>
+<td>O(n^2)</td>
+<td>Quadratic</td>
+<td>Compare every pair</td>
+<td>1,000,000 steps</td>
+</tr>
+<tr>
+<td>O(n^3)</td>
+<td>Cubic</td>
+<td>Three nested loops</td>
+<td>1,000,000,000 steps</td>
+</tr>
+<tr>
+<td>O(2^n)</td>
+<td>Exponential</td>
+<td>Naive Fibonacci</td>
+<td>more than atoms in the universe</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Space complexity examples</strong></p>
+<table>
+<thead>
+<tr>
+<th>Technique</th>
+<th>Extra space</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Swap two ends of a list in place</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>Build a reversed copy</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>Recursion of depth n</td>
+<td>O(n) stack</td>
+</tr>
+<tr>
+<td>Set of seen values</td>
+<td>O(n)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>E. Problems for Practice</h2>
+<table>
+<thead>
+<tr>
+<th>No</th>
+<th>Title</th>
+<th>Difficulty</th>
+<th>Concept</th>
+<th>Python File</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Constant Time Operations</td>
+<td>Easy</td>
+<td>O(1) operations and step counting</td>
+<td><code>01_constant_time.py</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Linear Time Operations</td>
+<td>Easy</td>
+<td>O(n) single loop</td>
+<td><code>02_linear_time.py</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Quadratic Time Operations</td>
+<td>Easy</td>
+<td>O(n^2) nested loops, pair counting</td>
+<td><code>03_quadratic_time.py</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Logarithmic Time with Binary Search</td>
+<td>Easy</td>
+<td>O(log n), halving</td>
+<td><code>04_logarithmic_time.py</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Linearithmic Time with Merge Sort</td>
+<td>Medium</td>
+<td>O(n log n), divide and merge</td>
+<td><code>05_linearithmic_time.py</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Analysing Nested Loops</td>
+<td>Medium</td>
+<td>Reading loops and deriving Big O</td>
+<td><code>06_nested_loops_analysis.py</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Best, Average and Worst Case</td>
+<td>Medium</td>
+<td>Case analysis of linear search</td>
+<td><code>07_best_average_worst_case.py</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>Exponential Time: Naive Fibonacci vs Memoization</td>
+<td>Medium</td>
+<td>O(2^n) versus O(n), caching</td>
+<td><code>08_exponential_time_fibonacci.py</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>Space Complexity</td>
+<td>Medium</td>
+<td>O(1) versus O(n) extra memory</td>
+<td><code>09_space_complexity.py</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>Comparing Complexities</td>
+<td>Medium</td>
+<td>Growth table, three duplicate detectors</td>
+<td><code>10_comparing_complexities.py</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Problem 1 - Constant Time Operations (<code>01_constant_time.py</code>)</h3>
+<p><strong>Statement.</strong> Write functions that take a fixed number of steps no matter how long the list is: read the first element, check if a number is even, swap the first and last elements, and compute <code>1 + 2 + ... + n</code> with a formula. Each function should also return the number of steps it used. Add a loop version of the sum to contrast.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">n = 10: first element = 0, steps = 1
+        formula sum = 55, steps = 3
+        loop sum    = 55, steps = 10
+get_first_element([]) -&gt; (None, 1)
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list must not crash; one-element list; <code>n = 0</code>.</p>
+<p><strong>Hints.</strong>
+- Indexing a list is a direct jump, not a search.
+- The sum <code>1..n</code> has a closed form involving <code>n * (n + 1)</code>; division by 2 must stay an integer.
+- Count steps yourself with a variable; compare the formula version with the loop version for growing <code>n</code>.</p>
+<h3>Problem 2 - Linear Time Operations (<code>02_linear_time.py</code>)</h3>
+<p><strong>Statement.</strong> Write <code>sum_of_list</code>, <code>count_evens</code> and <code>linear_search</code>, each returning its answer plus the number of loop iterations. Show that a list twice as long needs twice the steps.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">numbers = [4, 7, 1, 9, 2, 8, 6]
+sum_of_list -&gt; (37, 7)    count_evens -&gt; (4, 7)
+linear_search(9) -&gt; (3, 4)    linear_search(100) -&gt; (-1, 7)
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list (sum 0, search -1), target missing, target at index 0.</p>
+<p><strong>Hints.</strong>
+- One <code>for</code> loop and one counter are enough.
+- Search may stop early; the sum and count may not.
+- Return a pair (answer, steps).</p>
+<h3>Problem 3 - Quadratic Time Operations (<code>03_quadratic_time.py</code>)</h3>
+<p><strong>Statement.</strong> Given a list, (a) count all ordered pairs <code>(i, j)</code>, (b) count unordered pairs whose sum equals a target, (c) detect a duplicate by comparing every pair. Report comparisons.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">numbers = [3, 8, 2, 5, 7, 1], target = 9
+ordered pairs steps: 36
+pairs with sum 9: (2, 15)       # 2 pairs found in 15 comparisons
+duplicates in [4, 1, 4]: (True, 2)
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Lists of size 0 or 1 have no pairs; a pair must use two different positions.</p>
+<p><strong>Hints.</strong>
+- For unordered pairs let the inner loop start just after the outer index.
+- The number of unordered pairs is <code>n * (n - 1) / 2</code>.
+- Return as soon as a duplicate is seen, but count what you did.</p>
+<h3>Problem 4 - Logarithmic Time with Binary Search (<code>04_logarithmic_time.py</code>)</h3>
+<p><strong>Statement.</strong> Search a target in a sorted list with binary search and count the steps. Also count how many times <code>n</code> can be halved before reaching 1, and compare for <code>n = 8, 1024, 1000000</code>.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">list = [2, 5, 8, 12, 16, 23, 38, 56, 72, 91]
+search 23 -&gt; (5, 3)    search 50 -&gt; (-1, 4)
+n = 1000000: halvings = 19, binary search steps = 20
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list; target smaller than first or larger than last; unsorted input gives meaningless output.</p>
+<p><strong>Hints.</strong>
+- Keep two bounds and inspect the middle index.
+- If the middle is too small, move the lower bound past it; otherwise move the upper bound before it.
+- Stop when the bounds cross.</p>
+<h3>Problem 5 - Linearithmic Time with Merge Sort (<code>05_linearithmic_time.py</code>)</h3>
+<p><strong>Statement.</strong> Sort a list with a hand-written merge sort and count comparisons. Compare the count with <code>n * log2(n)</code> for several sizes.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">input : [38, 27, 43, 3, 9, 82, 10]
+sorted: [3, 9, 10, 27, 38, 43, 82]
+comparisons: 13
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty and one-element lists; already sorted and reversed lists; duplicates (take from the left half first to stay stable). Do not use <code>sorted()</code> for the actual work.</p>
+<p><strong>Hints.</strong>
+- Split in the middle, sort both halves recursively, then merge.
+- Merging uses one pointer per half and always takes the smaller front item.
+- Count a comparison each time you compare two front items.</p>
+<h3>Problem 6 - Analysing Nested Loops (<code>06_nested_loops_analysis.py</code>)</h3>
+<p><strong>Statement.</strong> Implement five loop patterns (two sequential loops, nested, triangle, doubling inner variable, triple nested) as functions that return how many times the innermost statement ran. Match each count to a formula.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">  n   seq  nested  triangle  doubling  triple
+  8    16      64        36        24     512
+n = 0 -&gt; 0 0
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> <code>n = 0</code> gives 0 everywhere; a doubling variable must start at 1 or the loop never ends; keep <code>n</code> small for the cubic pattern.</p>
+<p><strong>Hints.</strong>
+- Sequential loops add; nested loops multiply.
+- The triangle pattern sums <code>n + (n-1) + ... + 1</code>.
+- The doubling pattern costs <code>log n</code> per outer iteration.</p>
+<h3>Problem 7 - Best, Average and Worst Case (<code>07_best_average_worst_case.py</code>)</h3>
+<p><strong>Statement.</strong> For linear search over a list of distinct numbers, measure comparisons when the target is first, in the middle, last and missing. Then compute the true average over all positions and compare with <code>(n + 1) / 2</code>.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">numbers = [14, 3, 27, 8, 19, 42, 5, 31, 6, 11]
+best 1, middle 5, worst 10, missing 10, average 5.5
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list gives 0 comparisons; duplicates stop at the first match.</p>
+<p><strong>Hints.</strong>
+- A target at index <code>k</code> costs <code>k + 1</code> comparisons.
+- Search every element once and divide the total by <code>n</code> for the average.
+- Interviews usually want the worst case.</p>
+<h3>Problem 8 - Exponential Time: Naive Fibonacci vs Memoization (<code>08_exponential_time_fibonacci.py</code>)</h3>
+<p><strong>Statement.</strong> Compute Fibonacci numbers three ways (plain recursion, recursion with a dictionary cache, a loop) and count function calls for <code>n = 10, 20, 25</code>.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">n = 10: value = 55, naive calls = 177, memo calls = 19, iterative = 55
+n = 25: value = 75025, naive calls = 242785, memo calls = 49
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> <code>fib(0) = 0</code>, <code>fib(1) = 1</code>; reject negative <code>n</code> with <code>ValueError</code>; keep the naive version to small <code>n</code>.</p>
+<p><strong>Hints.</strong>
+- Naive: sum of the two previous calls.
+- Memo: look in the dictionary first, store the answer before returning.
+- Loop: keep only the last two values.</p>
+<h3>Problem 9 - Space Complexity (<code>09_space_complexity.py</code>)</h3>
+<p><strong>Statement.</strong> Reverse a list in place and by building a copy; compute a running total and a prefix-sum list; compute a recursive sum. Report extra slots used by each.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">copy reversed: ([6, 5, 4, 3, 2, 1], 6)
+in-place reversed: ([6, 5, 4, 3, 2, 1], 0)
+running total: (21, 0)    prefix sums: ([1, 3, 6, 10, 15, 21], 6)
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty and one-element lists; in-place reversal changes the original; deep recursion hits Python's limit near 1000.</p>
+<p><strong>Hints.</strong>
+- Two pointers moving inward need only one temporary variable.
+- A copy needs a slot per element.
+- Each recursive call costs one stack frame.</p>
+<h3>Problem 10 - Comparing Complexities (<code>10_comparing_complexities.py</code>)</h3>
+<p><strong>Statement.</strong> (a) Print a table of <code>log n</code>, <code>n</code>, <code>n log n</code>, <code>n^2</code>, <code>2^n</code> for several sizes. (b) Detect duplicates three ways (pairwise, sort then scan with a hand-written sort, set) and compare step counts.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">   n  log n    n  n log n    n^2          2^n
+  16      4   16       64    256        65536
+    n  pairwise  sort+scan   set
+  100      4950        615   100
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty and one-element lists; worst case is no duplicates; only print <code>2^n</code> for small <code>n</code>.</p>
+<p><strong>Hints.</strong>
+- After sorting, equal values are neighbours.
+- A set answers "seen before?" in about one step on average.
+- Count a step for each comparison or set lookup.</p>
+<hr />
+<h2>F. Installation Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python version</td>
+<td>Python 3.8 or newer</td>
+</tr>
+<tr>
+<td>Packages</td>
+<td>None. Standard library only (<code>math</code> where needed)</td>
+</tr>
+<tr>
+<td>Extra installation</td>
+<td>Nothing to install beyond Python itself</td>
+</tr>
+</tbody>
+</table>
+<p>Check your installation with <code>python --version</code> (see section G).</p>
+<hr />
+<h2>G. How to Run the Files</h2>
+<ol>
+<li>Open a terminal: <strong>Windows</strong> - press <code>Win + R</code>, type <code>cmd</code> (or open PowerShell / VS Code terminal). <strong>Linux/macOS</strong> - open Terminal.</li>
+<li>Verify Python:
+   <code>bash
+   python --version      # Windows (or: py --version)
+   python3 --version     # Linux / macOS</code></li>
+<li>Move into the topic folder and run a file.</li>
+</ol>
+<p><strong>Windows</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice\01-Time-Complexity
+python 01_constant_time.py
+</code></pre>
+<p>If <code>python</code> is not recognised, use the Python launcher: <code>py 01_constant_time.py</code>.</p>
+<p><strong>Linux / macOS</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice/01-Time-Complexity
+python3 01_constant_time.py
+</code></pre>
+<p>Every file is a standalone program: it needs no other file and no internet.</p>
+<hr />
+<h2>H. Revision Notes</h2>
+<p><strong>Key concepts</strong>
+- Big O describes growth, not exact seconds. Drop constants and lower-order terms.
+- Sequential code adds, nested code multiplies, halving gives <code>log n</code>.
+- <code>O(1) &lt; O(log n) &lt; O(n) &lt; O(n log n) &lt; O(n^2) &lt; O(2^n)</code>.
+- Best, average and worst cases can differ for the same algorithm.
+- Space complexity counts extra memory (recursion stack included).</p>
+<p><strong>Common mistakes</strong>
+- Forgetting that a hidden loop (such as <code>in</code> on a list, <code>sum()</code>, slicing) costs <code>O(n)</code>.
+- Treating <code>O(2n)</code> as different from <code>O(n)</code>.
+- Using binary search on unsorted data.
+- Starting a doubling loop at 0 (infinite loop).
+- Ignoring recursion stack space.</p>
+<p><strong>Interview tips</strong>
+- State the worst case first, then mention best and average if different.
+- Always give both time and space.
+- Say which variable <code>n</code> stands for when there are two inputs (<code>O(n + m)</code> versus <code>O(n * m)</code>).
+- Mention the trade-off: a set cuts time from <code>O(n^2)</code> to <code>O(n)</code> but costs <code>O(n)</code> space.
+- Be ready to re-derive the count of a triangle loop: <code>n(n+1)/2</code>.</p>

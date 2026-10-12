@@ -1,0 +1,627 @@
+<h1>10 - Graph</h1>
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#a-topic-introduction">A. Topic Introduction</a></li>
+<li><a href="#b-core-concepts">B. Core Concepts</a></li>
+<li><a href="#c-how-it-works">C. How It Works</a></li>
+<li><a href="#d-time-and-space-complexity">D. Time and Space Complexity</a></li>
+<li><a href="#e-problems-for-practice">E. Problems for Practice</a></li>
+<li><a href="#f-installation-requirements">F. Installation Requirements</a></li>
+<li><a href="#g-how-to-run-the-files">G. How to Run the Files</a></li>
+<li><a href="#h-revision-notes">H. Revision Notes</a></li>
+</ul>
+<h2>A. Topic Introduction</h2>
+<p>A <strong>graph</strong> is a set of <strong>vertices</strong> (things) joined by <strong>edges</strong> (relationships). It is the most general data structure you will meet: a linked list is a graph where every vertex has one neighbour, and a tree is a graph with no cycles.</p>
+<p><strong>Why it matters in DSA.</strong> Many interview problems are graph problems in disguise: "can I get from A to B?", "what is the fewest number of steps?", "which tasks must run first?", "how many separate groups are there?".</p>
+<p><strong>Real-world uses.</strong> Social networks (friends), maps and route planning, web page links, package managers and build tools (dependencies), network routing, game boards and grids.</p>
+<p><strong>Everyday analogy.</strong> A city metro map. Stations are vertices, tracks are edges. Asking "how many stops from station A to station D?" is a shortest-path question. For a Laravel developer: think of database tables linked by foreign keys, or the dependency order of migrations. Each table is a vertex and each foreign key is an edge.</p>
+<h2>B. Core Concepts</h2>
+<p><strong>Terminology</strong></p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Vertex (node)</td>
+<td>One item in the graph</td>
+</tr>
+<tr>
+<td>Edge</td>
+<td>A connection between two vertices</td>
+</tr>
+<tr>
+<td>Undirected</td>
+<td>An edge works both ways (friendship)</td>
+</tr>
+<tr>
+<td>Directed</td>
+<td>An edge has a direction (A must come before B)</td>
+</tr>
+<tr>
+<td>Neighbour</td>
+<td>A vertex directly joined to another</td>
+</tr>
+<tr>
+<td>Degree</td>
+<td>Number of neighbours of a vertex</td>
+</tr>
+<tr>
+<td>Path</td>
+<td>A sequence of vertices joined by edges</td>
+</tr>
+<tr>
+<td>Cycle</td>
+<td>A path that returns to its starting vertex</td>
+</tr>
+<tr>
+<td>Connected component</td>
+<td>A group of vertices that can all reach each other</td>
+</tr>
+<tr>
+<td>In-degree</td>
+<td>Number of edges pointing into a vertex (directed graphs)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>A small graph</strong> (used in the examples below):</p>
+<pre><code class="language-text">    0 --- 1 --- 3 --- 4
+    |           |
+    2 ----------+
+</code></pre>
+<p>Edges: (0,1) (0,2) (1,3) (2,3) (3,4). The cycle is 0-1-3-2-0.</p>
+<p><strong>Two ways to store it</strong></p>
+<p>Adjacency list (a dictionary of lists; good for sparse graphs, the usual choice):</p>
+<pre><code class="language-text">0 -&gt; [1, 2]
+1 -&gt; [0, 3]
+2 -&gt; [0, 3]
+3 -&gt; [1, 2, 4]
+4 -&gt; [3]
+</code></pre>
+<p>Adjacency matrix (a grid; O(1) edge check but O(V^2) memory):</p>
+<pre><code class="language-text">    0 1 2 3 4
+0:  0 1 1 0 0
+1:  1 0 0 1 0
+2:  1 0 0 1 0
+3:  0 1 1 0 1
+4:  0 0 0 1 0
+</code></pre>
+<p><strong>Two ways to walk it</strong></p>
+<ul>
+<li><strong>BFS</strong> (breadth-first) uses a <strong>queue</strong>: visit all vertices 1 step away, then 2 steps away, and so on.</li>
+<li><strong>DFS</strong> (depth-first) uses a <strong>stack</strong> (or recursion): go as deep as possible, then backtrack.</li>
+</ul>
+<pre><code class="language-mermaid">graph LR
+  A((0)) --- B((1))
+  A --- C((2))
+  B --- D((3))
+  C --- D
+  D --- E((4))
+</code></pre>
+<h2>C. How It Works</h2>
+<p><strong>BFS dry run</strong> on the graph above, starting from 0. Mark a vertex visited when it is put in the queue.</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Take from queue</th>
+<th>Queue after adding unseen neighbours</th>
+<th>Result so far</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>-</td>
+<td>[0]</td>
+<td>[]</td>
+</tr>
+<tr>
+<td>1</td>
+<td>0</td>
+<td>[1, 2]</td>
+<td>[0]</td>
+</tr>
+<tr>
+<td>2</td>
+<td>1</td>
+<td>[2, 3]</td>
+<td>[0, 1]</td>
+</tr>
+<tr>
+<td>3</td>
+<td>2</td>
+<td>[3] (3 already seen)</td>
+<td>[0, 1, 2]</td>
+</tr>
+<tr>
+<td>4</td>
+<td>3</td>
+<td>[4]</td>
+<td>[0, 1, 2, 3]</td>
+</tr>
+<tr>
+<td>5</td>
+<td>4</td>
+<td>[]</td>
+<td>[0, 1, 2, 3, 4]</td>
+</tr>
+</tbody>
+</table>
+<p>Because the queue is first-in-first-out, every vertex at distance d leaves the queue before any vertex at distance d+1. That is why BFS gives shortest paths in <strong>unweighted</strong> graphs.</p>
+<p><strong>DFS dry run</strong> from 0 (neighbours tried in list order): visit 0, go to 1, go to 3, go to 2 (0 already seen, back), go to 4. Order: 0, 1, 3, 2, 4. The recursion stack always holds the current path.</p>
+<p><strong>The visited set</strong> is the rule that makes every traversal safe. Without it a cycle would make the loop run forever.</p>
+<p><strong>Kahn's topological sort</strong> (directed graphs): count in-degrees, queue every vertex with in-degree 0, remove one at a time and lower the in-degree of its targets. If not every vertex gets removed, a cycle exists.</p>
+<p><strong>Grid as a graph:</strong> in a 2D grid every cell is a vertex and its up/down/left/right cells are its neighbours; no adjacency list is ever built.</p>
+<h2>D. Time and Space Complexity</h2>
+<p>V = number of vertices, E = number of edges.</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Adjacency list</th>
+<th>Adjacency matrix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Space</td>
+<td>O(V + E)</td>
+<td>O(V^2)</td>
+</tr>
+<tr>
+<td>Is there an edge u-v?</td>
+<td>O(degree of u)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>List neighbours of u</td>
+<td>O(degree of u)</td>
+<td>O(V)</td>
+</tr>
+<tr>
+<td>Build from edge list</td>
+<td>O(V + E)</td>
+<td>O(V^2)</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Algorithm</th>
+<th>Time</th>
+<th>Extra space</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BFS / DFS</td>
+<td>O(V + E)</td>
+<td>O(V)</td>
+</tr>
+<tr>
+<td>Path exists</td>
+<td>O(V + E)</td>
+<td>O(V)</td>
+</tr>
+<tr>
+<td>Shortest path (unweighted, BFS)</td>
+<td>O(V + E)</td>
+<td>O(V)</td>
+</tr>
+<tr>
+<td>Connected components</td>
+<td>O(V + E)</td>
+<td>O(V)</td>
+</tr>
+<tr>
+<td>Cycle detection (undirected, DFS)</td>
+<td>O(V + E)</td>
+<td>O(V)</td>
+</tr>
+<tr>
+<td>Topological sort (Kahn)</td>
+<td>O(V + E)</td>
+<td>O(V + E)</td>
+</tr>
+<tr>
+<td>Number of islands (R x C grid)</td>
+<td>O(R * C)</td>
+<td>O(R * C)</td>
+</tr>
+</tbody>
+</table>
+<p>Rule of thumb: sparse graph (few edges) means use an adjacency list; dense graph or constant-time edge lookups mean a matrix.</p>
+<h2>E. Problems for Practice</h2>
+<p>Try each problem on your own first. Open the <code>.py</code> file only after you have attempted it.</p>
+<table>
+<thead>
+<tr>
+<th>No</th>
+<th>Title</th>
+<th>Difficulty</th>
+<th>Concept</th>
+<th>Python file</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>01</td>
+<td>Build a Graph with an Adjacency List</td>
+<td>Easy</td>
+<td>Graph representation, degree</td>
+<td><code>01_adjacency_list.py</code></td>
+</tr>
+<tr>
+<td>02</td>
+<td>Build a Graph with an Adjacency Matrix</td>
+<td>Easy</td>
+<td>Matrix representation, symmetry</td>
+<td><code>02_adjacency_matrix.py</code></td>
+</tr>
+<tr>
+<td>03</td>
+<td>Breadth-First Search (BFS) Traversal</td>
+<td>Easy</td>
+<td>Queue, visited set, level order</td>
+<td><code>03_bfs_traversal.py</code></td>
+</tr>
+<tr>
+<td>04</td>
+<td>Depth-First Search (DFS) Traversal</td>
+<td>Easy</td>
+<td>Recursion vs explicit stack</td>
+<td><code>04_dfs_traversal.py</code></td>
+</tr>
+<tr>
+<td>05</td>
+<td>Does a Path Exist?</td>
+<td>Easy</td>
+<td>Reachability, parent tracking</td>
+<td><code>05_path_exists.py</code></td>
+</tr>
+<tr>
+<td>06</td>
+<td>Shortest Path in an Unweighted Graph</td>
+<td>Medium</td>
+<td>BFS distance and path</td>
+<td><code>06_shortest_path_unweighted.py</code></td>
+</tr>
+<tr>
+<td>07</td>
+<td>Count and List Connected Components</td>
+<td>Medium</td>
+<td>Traversal from every unvisited vertex</td>
+<td><code>07_connected_components.py</code></td>
+</tr>
+<tr>
+<td>08</td>
+<td>Detect a Cycle in an Undirected Graph</td>
+<td>Medium</td>
+<td>DFS with parent</td>
+<td><code>08_cycle_detection_undirected.py</code></td>
+</tr>
+<tr>
+<td>09</td>
+<td>Topological Sort with Cycle Detection</td>
+<td>Medium</td>
+<td>Directed graphs, in-degree (Kahn)</td>
+<td><code>09_topological_sort.py</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>Number of Islands</td>
+<td>Medium</td>
+<td>Grid as a graph, flood fill</td>
+<td><code>10_number_of_islands.py</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Problem 01: Build a Graph with an Adjacency List (Easy)</h3>
+<p>File: <code>01_adjacency_list.py</code></p>
+<p><strong>Problem statement.</strong> Given n vertices labelled 0..n-1 and a list of undirected edges, build an adjacency list (dictionary of neighbour lists) and print each vertex with its neighbours and degree.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">n = 5
+edges = [(0,1), (0,2), (1,3), (2,3), (3,4)]
+
+0 -&gt; [1, 2] (degree 2)
+1 -&gt; [0, 3] (degree 2)
+2 -&gt; [0, 3] (degree 2)
+3 -&gt; [1, 2, 4] (degree 3)
+4 -&gt; [3] (degree 1)
+</code></pre>
+<p><strong>Constraints and edge cases.</strong></p>
+<ul>
+<li>n = 0 gives an empty graph.</li>
+<li>Vertices with no edges must still appear with an empty list.</li>
+<li>An edge using a vertex outside 0..n-1 must be rejected with an error.</li>
+<li>An undirected edge is stored twice.</li>
+</ul>
+<p><strong>Hints (no code).</strong></p>
+<ol>
+<li>Start by creating an empty list for every vertex so isolated vertices are not forgotten.</li>
+<li>For an undirected edge (u, v) you need to update two lists.</li>
+<li>Degree is simply how many entries a vertex's list has.</li>
+<li>Validate both endpoints before adding the edge.</li>
+</ol>
+<h3>Problem 02: Build a Graph with an Adjacency Matrix (Easy)</h3>
+<p>File: <code>02_adjacency_matrix.py</code></p>
+<p><strong>Problem statement.</strong> Build an n x n matrix where cell [u][v] is 1 when u and v are joined. Add helpers to test whether an edge exists and to list the neighbours of a vertex.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">n = 4
+edges = [(0,1), (0,2), (2,3)]
+
+   0 1 2 3
+0: 0 1 1 0
+1: 1 0 0 0
+2: 1 0 0 1
+3: 0 0 1 0
+Edge 0-1? True
+Edge 1-3? False
+Neighbours of 2: [0, 3]
+</code></pre>
+<p><strong>Constraints and edge cases.</strong></p>
+<ul>
+<li>n = 0 gives an empty matrix.</li>
+<li>Invalid vertex numbers must raise an error.</li>
+<li>Duplicate edges change nothing.</li>
+<li>Rows must be separate lists, not copies of one shared list.</li>
+</ul>
+<p><strong>Hints (no code).</strong></p>
+<ol>
+<li>Be careful how you create the rows: building them with list multiplication of a list shares one row.</li>
+<li>For an undirected graph the matrix is symmetric, so set two cells per edge.</li>
+<li>Checking an edge is a single lookup.</li>
+<li>Neighbours of u are the column numbers where row u holds 1.</li>
+</ol>
+<h3>Problem 03: Breadth-First Search (BFS) Traversal (Easy)</h3>
+<p>File: <code>03_bfs_traversal.py</code></p>
+<p><strong>Problem statement.</strong> Given an adjacency list and a start vertex, return the vertices in BFS order (nearest first).</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">graph = {0:[1,2], 1:[0,3,4], 2:[0,5], 3:[1], 4:[1], 5:[2]}
+start = 0
+
+BFS from 0: [0, 1, 2, 3, 4, 5]
+BFS from 3: [3, 1, 0, 4, 2, 5]
+</code></pre>
+<p><strong>Constraints and edge cases.</strong></p>
+<ul>
+<li>A start vertex with no neighbours returns just [start].</li>
+<li>Vertices in other components are never reached.</li>
+<li>Cycles must not cause an infinite loop.</li>
+<li>A start vertex not in the graph should raise an error.</li>
+</ul>
+<p><strong>Hints (no code).</strong></p>
+<ol>
+<li>Use a queue (deque) and a visited set.</li>
+<li>Mark a vertex visited when you add it to the queue, not when you remove it; otherwise it can be queued twice.</li>
+<li>Process the front vertex, then add its unseen neighbours.</li>
+<li>Stop when the queue is empty.</li>
+</ol>
+<h3>Problem 04: Depth-First Search (DFS) Traversal (Easy)</h3>
+<p>File: <code>04_dfs_traversal.py</code></p>
+<p><strong>Problem statement.</strong> Return the DFS order from a start vertex, first with recursion and then with an explicit stack. Both should give the same order.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">graph = {0:[1,2], 1:[0,3,4], 2:[0,5], 3:[1], 4:[1], 5:[2]}
+start = 0
+
+Recursive DFS: [0, 1, 3, 4, 2, 5]
+Iterative DFS: [0, 1, 3, 4, 2, 5]
+</code></pre>
+<p><strong>Constraints and edge cases.</strong></p>
+<ul>
+<li>A long chain of thousands of vertices can exceed Python's recursion limit.</li>
+<li>Cycles must be handled with a visited set.</li>
+<li>Unknown start vertex should raise an error.</li>
+</ul>
+<p><strong>Hints (no code).</strong></p>
+<ol>
+<li>Recursive: mark visited, record the vertex, then call yourself for each unseen neighbour.</li>
+<li>Iterative: a list used as a stack; pop, skip if visited, record, push neighbours.</li>
+<li>A stack reverses order, so think about the order in which you push neighbours if you want to match the recursive result.</li>
+<li>Test with a path graph of 5000 vertices to see why iterative matters.</li>
+</ol>
+<h3>Problem 05: Does a Path Exist? (Easy)</h3>
+<p>File: <code>05_path_exists.py</code></p>
+<p><strong>Problem statement.</strong> Given an undirected graph, a source and a destination, return whether the destination is reachable and, if so, one path from source to destination.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">graph = {0:[1,2], 1:[0,3], 2:[0], 3:[1], 4:[5], 5:[4]}
+
+0 -&gt; 3: exists=True path=[0, 1, 3]
+0 -&gt; 5: exists=False path=None
+</code></pre>
+<p><strong>Constraints and edge cases.</strong></p>
+<ul>
+<li>source == destination is trivially reachable with path [source].</li>
+<li>Different components mean no path.</li>
+<li>Unknown vertices should raise an error.</li>
+<li>The path found need not be the shortest.</li>
+</ul>
+<p><strong>Hints (no code).</strong></p>
+<ol>
+<li>Traverse from the source and remember, for every vertex, which vertex you came from.</li>
+<li>If the destination gets a recorded parent, it was reached.</li>
+<li>Rebuild the path by following parents backwards, then reverse it.</li>
+<li>Handle the source == destination case first.</li>
+</ol>
+<h3>Problem 06: Shortest Path in an Unweighted Graph (Medium)</h3>
+<p>File: <code>06_shortest_path_unweighted.py</code></p>
+<p><strong>Problem statement.</strong> Return the minimum number of edges between a source and destination and one shortest path. Return (-1, None) when unreachable.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">graph = {0:[1,2], 1:[0,3], 2:[0,3], 3:[1,2,4], 4:[3], 5:[]}
+
+0 -&gt; 4: distance=3 path=[0, 1, 3, 4]
+0 -&gt; 5: distance=-1 path=None
+</code></pre>
+<p><strong>Constraints and edge cases.</strong></p>
+<ul>
+<li>source == destination gives distance 0.</li>
+<li>Unreachable destination gives (-1, None).</li>
+<li>Several shortest paths may exist; any is fine.</li>
+<li>This does not work for weighted edges.</li>
+</ul>
+<p><strong>Hints (no code).</strong></p>
+<ol>
+<li>Why does BFS (and not DFS) give shortest paths? Think about the order vertices leave the queue.</li>
+<li>Record distance[v] = distance[u] + 1 the first time you discover v.</li>
+<li>Also record the parent so the path can be rebuilt.</li>
+<li>You may stop as soon as the destination is discovered.</li>
+</ol>
+<h3>Problem 07: Count and List Connected Components (Medium)</h3>
+<p>File: <code>07_connected_components.py</code></p>
+<p><strong>Problem statement.</strong> Given n vertices and an edge list, return how many connected components there are and the vertices of each.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">n = 7, edges = [(0,1), (1,2), (3,4)]
+
+Component count: 4
+Component 1: [0, 1, 2]
+Component 2: [3, 4]
+Component 3: [5]
+Component 4: [6]
+</code></pre>
+<p><strong>Constraints and edge cases.</strong></p>
+<ul>
+<li>n = 0 gives 0 components.</li>
+<li>No edges: every vertex is its own component.</li>
+<li>Fully connected graph: exactly 1.</li>
+<li>Invalid edge endpoints should raise an error.</li>
+</ul>
+<p><strong>Hints (no code).</strong></p>
+<ol>
+<li>Build the adjacency list first.</li>
+<li>Loop over every vertex; when one is unvisited, a new component starts.</li>
+<li>A traversal from it collects exactly that component.</li>
+<li>The answer is the number of times you had to start a new traversal.</li>
+</ol>
+<h3>Problem 08: Detect a Cycle in an Undirected Graph (Medium)</h3>
+<p>File: <code>08_cycle_detection_undirected.py</code></p>
+<p><strong>Problem statement.</strong> Return True if an undirected graph (possibly disconnected) contains a cycle.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">tree  = {0:[1,2], 1:[0], 2:[0]}
+cycle = {0:[1,2], 1:[0,2], 2:[0,1]}
+
+Tree has cycle: False
+Triangle has cycle: True
+</code></pre>
+<p><strong>Constraints and edge cases.</strong></p>
+<ul>
+<li>The cycle may be in only one component.</li>
+<li>A self-loop counts as a cycle.</li>
+<li>Empty graph has no cycle.</li>
+<li>Inputs are assumed to be simple graphs (no repeated edges).</li>
+</ul>
+<p><strong>Hints (no code).</strong></p>
+<ol>
+<li>In an undirected edge, the vertex you just came from always shows up as a visited neighbour. How can you ignore exactly that one?</li>
+<li>Pass the parent along in the DFS.</li>
+<li>A visited neighbour that is not the parent means a second route exists.</li>
+<li>Start the DFS from every unvisited vertex.</li>
+</ol>
+<h3>Problem 09: Topological Sort with Cycle Detection (Medium)</h3>
+<p>File: <code>09_topological_sort.py</code></p>
+<p><strong>Problem statement.</strong> Given tasks 0..n-1 and directed edges (a, b) meaning a must come before b, return a valid order or None if a cycle makes it impossible.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">n = 6
+edges = [(5,2), (5,0), (4,0), (4,1), (2,3), (3,1)]
+
+Order: [4, 5, 2, 0, 3, 1]
+Cycle 0-&gt;1-&gt;2-&gt;0: None
+</code></pre>
+<p><strong>Constraints and edge cases.</strong></p>
+<ul>
+<li>Empty graph returns [].</li>
+<li>A cycle returns None.</li>
+<li>Many valid orders may exist; yours depends on queue order.</li>
+<li>Invalid endpoints should raise an error.</li>
+</ul>
+<p><strong>Hints (no code).</strong></p>
+<ol>
+<li>Compute the in-degree of every vertex.</li>
+<li>A vertex with in-degree 0 has no unmet prerequisites; queue all of them.</li>
+<li>When you output a vertex, lower the in-degree of what it points to.</li>
+<li>If you output fewer than n vertices, what does that tell you?</li>
+</ol>
+<h3>Problem 10: Number of Islands (Medium)</h3>
+<p>File: <code>10_number_of_islands.py</code></p>
+<p><strong>Problem statement.</strong> Given a grid of '1' (land) and '0' (water), count the islands. Land cells connect horizontally or vertically only.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">1 1 0 0 0
+1 1 0 0 0
+0 0 1 0 0
+0 0 0 1 1
+
+Islands: 3
+</code></pre>
+<p><strong>Constraints and edge cases.</strong></p>
+<ul>
+<li>Empty grid or empty rows give 0.</li>
+<li>All water gives 0; all land gives 1.</li>
+<li>Diagonal cells are not connected.</li>
+<li>Do not destroy the caller's grid (work on a copy).</li>
+</ul>
+<p><strong>Hints (no code).</strong></p>
+<ol>
+<li>Each cell is a vertex with up to four neighbours.</li>
+<li>Scan every cell; an unvisited land cell starts a new island.</li>
+<li>Flood fill (BFS or DFS) from it and mark everything reached.</li>
+<li>Always check the row/column bounds before looking at a neighbour.</li>
+</ol>
+<h2>F. Installation Requirements</h2>
+<ul>
+<li>Python version: <strong>Python 3.8 or newer</strong> (the files were run with Python 3.13).</li>
+<li>Packages: <strong>none to install</strong>. Every file in this folder uses only plain Python plus <code>collections.deque</code> from the standard library in the BFS-based files.</li>
+<li>NumPy is <strong>not</strong> needed here (it is used only in <code>02-Arrays-Numpy-and-Python</code>).</li>
+<li>No extra installation step is required beyond Python itself.</li>
+</ul>
+<h2>G. How to Run the Files</h2>
+<ol>
+<li>Open a terminal (Windows: Command Prompt or PowerShell; macOS: Terminal; Linux: your terminal app).</li>
+<li>Check that Python is installed:</li>
+</ol>
+<pre><code class="language-bash">python --version
+</code></pre>
+<p>On Linux/macOS, if <code>python</code> is not found, use <code>python3 --version</code>. On Windows, if <code>python</code> is not found, try <code>py --version</code>.</p>
+<ol>
+<li>Go to this topic folder and run a file:</li>
+</ol>
+<p>Windows:</p>
+<pre><code class="language-bash">cd Python-DSA-Practice\10-Graph
+python 01_adjacency_list.py
+</code></pre>
+<p>If <code>python</code> does not work on Windows, use the launcher: <code>py 01_adjacency_list.py</code></p>
+<p>Linux / macOS:</p>
+<pre><code class="language-bash">cd Python-DSA-Practice/10-Graph
+python3 01_adjacency_list.py
+</code></pre>
+<p>Each file is a standalone program: it needs no other file, no internet connection and no input from the keyboard.</p>
+<h2>H. Revision Notes</h2>
+<p><strong>Key concepts</strong></p>
+<ul>
+<li>Choose representation by density: list for sparse, matrix for dense.</li>
+<li>BFS = queue = levels = shortest path in unweighted graphs. DFS = stack/recursion = deep exploration.</li>
+<li>Always keep a visited set; otherwise cycles loop forever.</li>
+<li>Connected components = number of fresh traversals needed.</li>
+<li>Undirected cycle: visited neighbour that is not the parent. Directed cycle: Kahn's algorithm cannot output every vertex.</li>
+<li>A grid is an implicit graph; do not build an adjacency list for it.</li>
+</ul>
+<p><strong>Common mistakes</strong></p>
+<ul>
+<li>Marking visited when popping from the queue (vertices get queued many times).</li>
+<li>Forgetting vertices with no edges, or disconnected parts.</li>
+<li>Using DFS to claim a shortest path.</li>
+<li>Recursive DFS on very deep graphs hitting the recursion limit.</li>
+<li>Treating the parent as a cycle in undirected cycle detection.</li>
+<li>Treating diagonals as neighbours in grid problems.</li>
+</ul>
+<p><strong>Interview tips</strong></p>
+<ul>
+<li>Ask: directed or undirected? weighted? connected? can there be cycles or self-loops?</li>
+<li>State V and E when giving complexity: O(V + E).</li>
+<li>Draw a 5-vertex example and dry-run BFS before coding.</li>
+<li>"Fewest steps" almost always means BFS; "all possibilities" often means DFS.</li>
+<li>Mention Union-Find as an alternative for components and cycles.</li>
+</ul>

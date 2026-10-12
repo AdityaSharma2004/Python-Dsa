@@ -1,0 +1,425 @@
+<h1>19 - Fractional Knapsack</h1>
+<h2>A. Topic Introduction</h2>
+<p><strong>What it is.</strong> You have a bag that holds at most <code>capacity</code> weight and a set of items, each with a weight and a value. In the <em>fractional</em> version you may take any fraction of an item (half the item gives half its value). The goal is the maximum total value that fits in the bag.</p>
+<p><strong>Why it matters in DSA.</strong> It is the textbook example of a greedy algorithm that is provably optimal. It also sits next to the 0/1 knapsack (where items cannot be split), which needs Dynamic Programming. Knowing why one is greedy and the other is not is a classic interview question.</p>
+<p><strong>Where it is used.</strong>
+- Budget or resource allocation where resources are divisible (money, bandwidth, CPU time, liquid or bulk goods).
+- Choosing what to load onto a truck, pick from a warehouse, or cut from raw material.
+- Teaching the exchange argument for greedy proofs.</p>
+<p><strong>Everyday analogy.</strong> You are at a spice market with a bag that takes 50 kg. Saffron is worth far more per gram than rice. You fill the bag with saffron first, then the next most valuable spice, and so on, and if the last sack does not fully fit you scoop only part of it.</p>
+<hr />
+<h2>B. Core Concepts</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Capacity</td>
+<td>Maximum weight the bag can hold.</td>
+</tr>
+<tr>
+<td>Value density (ratio)</td>
+<td><code>value / weight</code>: how much value each unit of weight brings.</td>
+</tr>
+<tr>
+<td>Fraction taken</td>
+<td>A number from 0 to 1 saying how much of an item is used.</td>
+</tr>
+<tr>
+<td>Greedy rule</td>
+<td>Take items in decreasing order of value density.</td>
+</tr>
+<tr>
+<td>Divisible items</td>
+<td>Items can be split; this is what makes greedy optimal.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Picture of the bag (capacity 50)</strong></p>
+<pre><code>Items: A(w=10,v=60) ratio 6   B(w=20,v=100) ratio 5   C(w=30,v=120) ratio 4
+
+Bag:  |AAAAAAAAAA|BBBBBBBBBBBBBBBBBBBB|CCCCCCCCCCCCCCCCCCCC          |
+       10 units     20 units            20 of C's 30 units (2/3)
+Value: 60      +   100        +   120 * 2/3 = 80     = 240
+</code></pre>
+<p><strong>Why only one item is ever fractional.</strong> Items are taken in ratio order. Once one does not fit whole, you take what remains and the bag is full, so there is at most one partial item.</p>
+<p><strong>Sorting key matters.</strong> Ordering by value alone or by weight alone can fail (see problem 7). Only the ratio is always correct.</p>
+<hr />
+<h2>C. How It Works</h2>
+<p>Input: weights <code>[10, 20, 30]</code>, values <code>[60, 100, 120]</code>, capacity <code>50</code>.</p>
+<ol>
+<li>Ratios: A = 6, B = 5, C = 4. Sorted order: A, B, C.</li>
+<li>Fill the bag:</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Item</th>
+<th>Remaining capacity before</th>
+<th>Taken</th>
+<th>Remaining after</th>
+<th>Gain</th>
+<th>Running total</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>A</td>
+<td>50</td>
+<td>10 (whole)</td>
+<td>40</td>
+<td>60</td>
+<td>60</td>
+</tr>
+<tr>
+<td>2</td>
+<td>B</td>
+<td>40</td>
+<td>20 (whole)</td>
+<td>20</td>
+<td>100</td>
+<td>160</td>
+</tr>
+<tr>
+<td>3</td>
+<td>C</td>
+<td>20</td>
+<td>20 of 30 (2/3)</td>
+<td>0</td>
+<td>80</td>
+<td>240</td>
+</tr>
+</tbody>
+</table>
+<p>Answer: <strong>240</strong>.</p>
+<p><strong>Comparison with 0/1 knapsack on the same input.</strong> Whole items only: best is B + C = 220 (the ratio greedy would take A and B for just 160). So fractional (240) is always at least as good as 0/1 (220).</p>
+<p><strong>Why greedy is optimal (exchange argument).</strong> If a better answer used some weight of a low-ratio item while a higher-ratio item still had unused weight, swapping the two would raise the total. So any optimal answer can be rearranged to look exactly like the greedy fill.</p>
+<p>Laravel analogy: it is like <code>orderByDesc('value / weight')</code> and then looping over the rows, subtracting from a remaining-capacity variable until it hits zero.</p>
+<hr />
+<h2>D. Time and Space Complexity</h2>
+<table>
+<thead>
+<tr>
+<th>Approach</th>
+<th>Time</th>
+<th>Space</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sort by ratio, then fill (merge/quick sort)</td>
+<td>O(n log n)</td>
+<td>O(n)</td>
+<td>Standard answer</td>
+</tr>
+<tr>
+<td>Sort by ratio with insertion/selection sort</td>
+<td>O(n^2)</td>
+<td>O(n)</td>
+<td>What several files here use, since they hand-write simple sorts</td>
+</tr>
+<tr>
+<td>Max-heap by ratio</td>
+<td>O(n + k log n)</td>
+<td>O(n)</td>
+<td><code>k</code> = items actually examined; worst case O(n log n)</td>
+</tr>
+<tr>
+<td>Greedy loop alone</td>
+<td>O(n)</td>
+<td>O(1) extra</td>
+<td>After items are ordered</td>
+</tr>
+<tr>
+<td>0/1 knapsack DP</td>
+<td>O(n * capacity)</td>
+<td>O(capacity)</td>
+<td>For comparison</td>
+</tr>
+<tr>
+<td>Brute force over all orders</td>
+<td>O(n! * n)</td>
+<td>O(n)</td>
+<td>Only for verification on tiny inputs</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>E. Problems for Practice</h2>
+<table>
+<thead>
+<tr>
+<th>No</th>
+<th>Title</th>
+<th>Difficulty</th>
+<th>Concept</th>
+<th>Filename</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Basic Fractional Knapsack</td>
+<td>Easy</td>
+<td>Ratio sort and greedy fill</td>
+<td><code>01_basic_fractional_knapsack.py</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Value-to-Weight Ratio Table</td>
+<td>Easy</td>
+<td>Computing and ranking ratios</td>
+<td><code>02_value_to_weight_ratio_table.py</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Trace the Greedy Fill</td>
+<td>Easy</td>
+<td>Step-by-step state table</td>
+<td><code>03_trace_greedy_steps.py</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Fractions Taken Report</td>
+<td>Easy</td>
+<td>Keeping original indexes</td>
+<td><code>04_fractions_taken_report.py</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Edge Cases</td>
+<td>Easy</td>
+<td>Validation, zero weights, empty input</td>
+<td><code>05_edge_cases.py</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Exact Answers with Fraction</td>
+<td>Medium</td>
+<td>Exact arithmetic, no float error</td>
+<td><code>06_exact_answers_with_fraction.py</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Wrong Greedy Criteria</td>
+<td>Medium</td>
+<td>Counterexamples to other rules</td>
+<td><code>07_wrong_greedy_criteria.py</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>Compare with 0/1 Knapsack</td>
+<td>Medium</td>
+<td>Fractional vs 0/1 vs unbounded</td>
+<td><code>08_compare_with_01_knapsack.py</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>Heap-based Fractional Knapsack</td>
+<td>Medium</td>
+<td>Max-heap instead of full sort</td>
+<td><code>09_heap_based_fractional_knapsack.py</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>Verify Greedy Optimality</td>
+<td>Medium</td>
+<td>Brute-force testing of a greedy</td>
+<td><code>10_verify_greedy_optimality.py</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3>Problem 1 - Basic Fractional Knapsack</h3>
+<p><strong>Statement.</strong> Given <code>n</code> items with weights and values and a capacity, find the maximum total value when any fraction of an item may be taken.</p>
+<p><strong>Example.</strong></p>
+<pre><code>weights = [10, 20, 30], values = [60, 100, 120], capacity = 50 -&gt; 240.0
+capacity 0   -&gt; 0.0
+capacity 100 -&gt; 280.0
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Capacity 0 gives 0. Capacity above the total weight means take everything. Equal ratios can be taken in any order.</p>
+<p><strong>Hints.</strong>
+- Which single number per item tells you how "worth it" a kilogram of that item is?
+- Order items by that number, best first (write your own simple sort).
+- For each item: if it fits whole, take it all; otherwise take only the part that fits and stop.
+- How much value does a fraction <code>f</code> of an item give?</p>
+<hr />
+<h3>Problem 2 - Value-to-Weight Ratio Table</h3>
+<p><strong>Statement.</strong> For a list of named items, compute each item's value per unit weight and print a table ranked best to worst. Also report the highest-value item and the best-ratio item.</p>
+<p><strong>Example.</strong></p>
+<pre><code>saffron (2, 300), pepper (10, 50), cardamom (5, 100), salt (20, 20), rice (50, 400)
+Ranking: saffron 150.00, cardamom 20.00, rice 8.00, pepper 5.00, salt 1.00
+highest value item: rice | best ratio item: saffron
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Tied ratios (earlier item keeps the better rank). A heavy item with a large value can still rank low. A single item.</p>
+<p><strong>Hints.</strong>
+- Rank without a built-in sort: repeatedly find the best item you have not ranked yet.
+- Use a "used" marker per item so you do not rank an item twice.
+- Notice that the highest-value item and the best-ratio item are different. Why?</p>
+<hr />
+<h3>Problem 3 - Trace the Greedy Fill</h3>
+<p><strong>Statement.</strong> Solve fractional knapsack and print a table with one row per item: weight, ratio, amount taken, capacity left, value gained, running total, and a note (whole item, fraction, or skipped).</p>
+<p><strong>Example.</strong></p>
+<pre><code>capacity 50: A takes 10 (whole), B takes 20 (whole), C takes 20 of 30 (fraction) -&gt; 240.0
+capacity 30: A takes 10, B takes 20, C skipped (bag fills exactly) -&gt; 160.0
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Bag exactly full after a whole item (no fraction at all). Items after the bag is full are shown as skipped. Capacity 0 skips everything.</p>
+<p><strong>Hints.</strong>
+- Decide three cases per item: capacity left is 0, item fits whole, item only partly fits.
+- Amount taken is the smaller of the item's weight and the remaining capacity.
+- Value gained is ratio times amount taken.
+- Print after each decision, not only at the end.</p>
+<hr />
+<h3>Problem 4 - Fractions Taken Report</h3>
+<p><strong>Statement.</strong> Return the maximum value plus a list with the fraction (0 to 1) taken of every item in its ORIGINAL position. Print only the items that were taken.</p>
+<p><strong>Example.</strong></p>
+<pre><code>weights = [5, 10, 15], values = [10, 30, 20], capacity = 15
+fractions = [1.0, 1.0, 0.0], total value 40.0, weight used 15.0 of 15
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Items never reached stay at 0.0. At most one fractional item. Capacity 0 gives all zeros.</p>
+<p><strong>Hints.</strong>
+- Sorting scrambles positions. What can you sort instead of the items themselves so the original position is not lost?
+- Prepare a result list of zeros, then write each fraction into the slot of the original index.
+- Verify your answer: total of (fraction * weight) must not exceed capacity, and total value must match.</p>
+<hr />
+<h3>Problem 5 - Edge Cases</h3>
+<p><strong>Statement.</strong> Make the function safe for empty item lists, capacity 0, negative capacity, capacity larger than everything, zero-weight items, tied ratios, mismatched list lengths and negative weights/values.</p>
+<p><strong>Example.</strong></p>
+<pre><code>weights = [0, 4, 6], values = [7, 8, 9], capacity = 5 -&gt; 16.5
+mismatched lengths -&gt; ValueError
+negative weight    -&gt; ValueError
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Division by zero when weight is 0. Decide what a zero-weight item with a positive value means (free value). Decide when to raise an error and when to return 0.</p>
+<p><strong>Hints.</strong>
+- Validate inputs before computing any ratio.
+- A zero-weight item costs no capacity. What should you do with its value?
+- After removing zero-weight items, can any remaining weight be 0?
+- Return 0 early when the capacity is 0 or negative.</p>
+<hr />
+<h3>Problem 6 - Exact Answers with Fraction</h3>
+<p><strong>Statement.</strong> Solve fractional knapsack with exact rational numbers so results like 2/3 are not rounded. Return the total value and each fraction taken as exact values.</p>
+<p><strong>Example.</strong></p>
+<pre><code>weights = [10, 20, 30], values = [60, 100, 120], capacity = 50
+exact total 240, fractions 1, 1, 2/3
+weights = [3, 7], values = [1, 1], capacity = 5 -&gt; total 9/7, fractions 1 and 2/7
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Totals that are whole numbers print without a decimal. Capacity 0. Equal ratios must be recognised as equal.</p>
+<p><strong>Hints.</strong>
+- Look at the standard library module <code>fractions</code> and its <code>Fraction</code> class.
+- Build every ratio and every fraction taken as a <code>Fraction</code>, not a float.
+- Compare ratios using those exact values, so ties are detected correctly.
+- Compare the output with a plain-float run to see the rounding difference (for example <code>0.1 + 0.2</code>).</p>
+<hr />
+<h3>Problem 7 - Wrong Greedy Criteria</h3>
+<p><strong>Statement.</strong> Implement the greedy fill with three ordering rules (highest ratio, lowest weight, highest value) and show on the same inputs that only the ratio rule is always optimal.</p>
+<p><strong>Example.</strong></p>
+<pre><code>weights [1, 10], values [1, 100], capacity 10:
+  by ratio 100.00, by weight 91.00 (worse), by value 100.00
+weights [10, 1, 1], values [20, 15, 15], capacity 10:
+  by ratio 46.00, by weight 46.00, by value 20.00 (worse)
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> A wrong rule may agree with the right one on some inputs (that proves nothing). Ties between rules.</p>
+<p><strong>Hints.</strong>
+- Write one fill routine that takes items in any order given to it, then change only the ordering.
+- Give each rule a "score" where a bigger score is better. For "lowest weight", what score makes small weights look big?
+- Hunt for counterexamples with 2 or 3 items where a heavy item has a big value but poor value per kilo.</p>
+<hr />
+<h3>Problem 8 - Compare with 0/1 Knapsack</h3>
+<p><strong>Statement.</strong> For the same items and capacity compute: the fractional optimum, the 0/1 optimum (DP), what ratio-greedy gives if items cannot be split, and the unbounded knapsack optimum (unlimited copies of each item).</p>
+<p><strong>Example.</strong></p>
+<pre><code>weights = [10, 20, 30], values = [60, 100, 120], capacity = 50
+Fractional 240.0 | 0/1 DP 220 | Ratio-greedy whole items 160 | Unbounded 300
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Capacity 0 gives 0 everywhere. An item heavier than the capacity is skipped in 0/1 and unbounded. When splitting makes no difference, all answers agree.</p>
+<p><strong>Hints.</strong>
+- Fractional is always at least the 0/1 answer. Why does extra freedom never hurt?
+- For 0/1, use a one-dimensional table indexed by capacity. Which direction should you loop over capacity so an item is used at most once?
+- For unbounded, reverse that direction. What does that allow?
+- Greedy on whole items: take an item only if it fits entirely, otherwise skip it.</p>
+<hr />
+<h3>Problem 9 - Heap-based Fractional Knapsack</h3>
+<p><strong>Statement.</strong> Solve fractional knapsack without sorting every item. Build a max-heap by ratio and repeatedly extract the best item until the bag is full. Report how many items were examined.</p>
+<p><strong>Example.</strong></p>
+<pre><code>weights = [10, 20, 30, 5, 15], values = [60, 100, 120, 50, 45]
+capacity 40 -&gt; value 230.00, items examined 4 of 5
+capacity 5  -&gt; value 50.00,  items examined 1 of 5
+capacity 200 -&gt; value 375.00, items examined 5 of 5
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Capacity 0 pops nothing. The heap may become empty before the bag is full (take everything). Equal ratios are decided by index.</p>
+<p><strong>Hints.</strong>
+- Python's <code>heapq</code> is a MIN-heap. How can you make the highest ratio come out first?
+- Store tuples that include the original index so you can report fractions in input order.
+- Build the heap in one go rather than pushing items one by one. What is the cost?
+- Stop as soon as the capacity reaches zero. When does that make it faster than a full sort?</p>
+<hr />
+<h3>Problem 10 - Verify Greedy Optimality</h3>
+<p><strong>Statement.</strong> Test the greedy algorithm on many seeded random inputs against two references: the best result over EVERY possible item order (brute force), and the 0/1 DP answer, which must never exceed the fractional one.</p>
+<p><strong>Example.</strong></p>
+<pre><code>300 random cases (seed 42), 1-6 items, weights 1-10, values 1-50, capacity 1-25
+greedy == best over all orders : True for every case
+fractional &gt;= 0/1 knapsack     : True for every case
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Ties in ratio make several orders optimal but totals still match. Capacity greater than total weight. A single item. Floats need a small tolerance when compared.</p>
+<p><strong>Hints.</strong>
+- Why does "the best result over all orders" equal the true optimum? Think: any optimal solution is a fill in some order.
+- Generate permutations yourself with recursive backtracking (choose an item, recurse, undo).
+- Keep n small (6 or fewer), since the work grows like n!.
+- Seed the random generator so a failing case can be reproduced.
+- Compare floating-point totals using an absolute difference, not <code>==</code>.</p>
+<hr />
+<h2>F. Installation Requirements</h2>
+<ul>
+<li><strong>Python version:</strong> 3.8 or newer.</li>
+<li><strong>Packages:</strong> none to install. Only the standard library is used (<code>heapq</code> in problem 9, <code>fractions</code> in problem 6, <code>random</code> in problem 10).</li>
+<li><strong>NumPy:</strong> not required for this topic.</li>
+<li><strong>Extra installation:</strong> not necessary.</li>
+</ul>
+<hr />
+<h2>G. How to Run the Files</h2>
+<ol>
+<li>Open a terminal (Windows: Command Prompt or PowerShell; macOS/Linux: Terminal).</li>
+<li>Check Python is installed:
+   <code>bash
+   python --version      # Windows
+   python3 --version     # Linux / macOS</code>
+   On Windows, if <code>python</code> is not recognised, try <code>py --version</code> and use <code>py</code> instead of <code>python</code> below.</li>
+<li>Move to the topic folder and run a file:</li>
+</ol>
+<p><strong>Windows</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice\19-Fractional-Knapsack
+python 01_basic_fractional_knapsack.py
+:: or
+py 01_basic_fractional_knapsack.py
+</code></pre>
+<p><strong>Linux / macOS</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice/19-Fractional-Knapsack
+python3 01_basic_fractional_knapsack.py
+</code></pre>
+<p>Every file is a standalone program that imports nothing from its sibling files.</p>
+<hr />
+<h2>H. Revision Notes</h2>
+<p><strong>Key concepts</strong>
+- Fractional knapsack is solved by taking items in decreasing <code>value / weight</code> order, then a fraction of the last one.
+- It is optimal because of divisibility (exchange argument). 0/1 knapsack lacks that and needs DP.
+- Fractional answer &gt;= 0/1 answer &gt;= ratio-greedy on whole items.
+- At most one item is partly taken.
+- Cost: sorting dominates (O(n log n) with a good sort); the fill is O(n). A heap helps when only a few items fit.</p>
+<p><strong>Common mistakes</strong>
+- Sorting by value or by weight instead of by ratio.
+- Dividing by zero for zero-weight items.
+- Losing the original item order after sorting (keep indexes).
+- Using the greedy rule on the 0/1 version and expecting an optimal answer.
+- Comparing floats with <code>==</code>; use exact <code>Fraction</code> or a tolerance.
+- Forgetting to stop after taking a fraction (the bag is then full).</p>
+<p><strong>Interview tips</strong>
+- First ask: can items be split? If yes, greedy by ratio; if no, DP.
+- Quote the exchange argument in a sentence.
+- Know the 240 vs 220 vs 160 example for <code>[10,20,30]</code>, <code>[60,100,120]</code>, capacity 50. It shows exactly why 0/1 differs.
+- Mention the heap alternative and its <code>O(n + k log n)</code> cost.</p>

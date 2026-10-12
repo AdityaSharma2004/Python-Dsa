@@ -1,0 +1,538 @@
+<h1>07 - Circular Queue</h1>
+<p>Learn how a fixed-size queue reuses its array by treating it as a ring, and how that idea powers schedulers, buffers and sliding windows.</p>
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#a-topic-introduction">A. Topic Introduction</a></li>
+<li><a href="#b-core-concepts">B. Core Concepts</a></li>
+<li><a href="#c-how-it-works">C. How It Works</a></li>
+<li><a href="#d-time-and-space-complexity">D. Time and Space Complexity</a></li>
+<li><a href="#e-problems-for-practice">E. Problems for Practice</a></li>
+<li><a href="#f-installation-requirements">F. Installation Requirements</a></li>
+<li><a href="#g-how-to-run-the-files">G. How to Run the Files</a></li>
+<li><a href="#h-revision-notes">H. Revision Notes</a></li>
+</ul>
+<hr />
+<h2>A. Topic Introduction</h2>
+<p><strong>What it is.</strong> A circular queue is a First-In-First-Out (FIFO) queue stored in a fixed-size array whose last slot is considered to be followed by the first slot. When an index walks off the end, it wraps back to 0.</p>
+<p><strong>Why it matters in DSA.</strong> A plain array queue wastes space: after many dequeues the front slots are empty but can never be used again. A circular queue reuses them, so a small fixed block of memory serves an endless stream of items with O(1) work per operation. It is also the cleanest way to learn the modulo (<code>%</code>) trick for cyclic indexing.</p>
+<p><strong>Where it is used.</strong> Ring buffers for logs and sensor data, keyboard and network buffers, CPU round-robin scheduling, turn order in games, music playlists on repeat, and sliding-window statistics.</p>
+<p><strong>Everyday analogy.</strong> A sushi conveyor belt or a round dinner table with a fixed number of seats: people sit, eat and leave, and the next arrival takes whichever seat comes up next, wrapping around the table.</p>
+<p>If you know PHP/Laravel: think of a fixed-size array where you keep an integer pointer and write <code>$i = ($i + 1) % $n</code> instead of letting <code>$i</code> grow forever. A "keep only the last N log lines" buffer is the same idea.</p>
+<hr />
+<h2>B. Core Concepts</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Capacity</td>
+<td>Number of slots in the array. It never changes.</td>
+</tr>
+<tr>
+<td>Front</td>
+<td>Index of the oldest item (the next one to leave).</td>
+</tr>
+<tr>
+<td>Rear</td>
+<td>Index of the newest item (or, in some designs, the next free slot).</td>
+</tr>
+<tr>
+<td>Size</td>
+<td>How many items are currently stored.</td>
+</tr>
+<tr>
+<td>Enqueue</td>
+<td>Add an item at the rear.</td>
+</tr>
+<tr>
+<td>Dequeue</td>
+<td>Remove the item at the front.</td>
+</tr>
+<tr>
+<td>Wrap-around</td>
+<td>Moving from the last index back to index 0 using <code>%</code>.</td>
+</tr>
+<tr>
+<td>Full / Empty</td>
+<td>The two boundary states that must be told apart.</td>
+</tr>
+<tr>
+<td>Ring buffer</td>
+<td>A circular queue that overwrites the oldest item when full.</td>
+</tr>
+<tr>
+<td>Deque</td>
+<td>Double-ended queue: insert and delete at both ends.</td>
+</tr>
+</tbody>
+</table>
+<h3>The ring picture</h3>
+<p>The array is linear in memory, but we think of it as a circle:</p>
+<pre><code class="language-text"> index:   0    1    2    3
+        +----+----+----+----+
+        | 10 | 20 | 30 |    |
+        +----+----+----+----+
+          ^              ^
+        front           next free slot (wraps to 0 after 3)
+
+ As a ring:
+            [0]
+        [3]     [1]
+            [2]
+</code></pre>
+<h3>The key formulas</h3>
+<pre><code class="language-text">next index          = (index + 1) % capacity
+previous index      = (index - 1) % capacity       (Python keeps this non-negative)
+rear slot (size ctr)= (front + size) % capacity    (next free slot)
+last item index     = (front + size - 1) % capacity
+is_full             = size == capacity
+is_empty            = size == 0
+</code></pre>
+<h3>Why full and empty are confusing</h3>
+<p>If you track only <code>front</code> and <code>rear</code>, then <code>front == rear</code> can mean "empty" or "completely full". Two standard fixes:</p>
+<ol>
+<li>Keep a <code>size</code> counter (use every slot).</li>
+<li>Waste one slot: the queue is full when <code>(rear + 1) % n == front</code>, so a queue of n slots holds at most n - 1 items.</li>
+</ol>
+<pre><code class="language-mermaid">flowchart LR
+    A[enqueue] --&gt; B{size == capacity?}
+    B -- yes --&gt; C[refuse: full]
+    B -- no --&gt; D[&quot;write at (front+size) % capacity&quot;]
+    D --&gt; E[size = size + 1]
+</code></pre>
+<hr />
+<h2>C. How It Works</h2>
+<p>Dry run with capacity 3 (using front + size):</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Operation</th>
+<th>Slots</th>
+<th>front</th>
+<th>size</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>start</td>
+<td><code>[_, _, _]</code></td>
+<td>0</td>
+<td>0</td>
+<td>empty</td>
+</tr>
+<tr>
+<td>1</td>
+<td>enqueue 10</td>
+<td><code>[10, _, _]</code></td>
+<td>0</td>
+<td>1</td>
+<td>write at (0+0)%3 = 0</td>
+</tr>
+<tr>
+<td>2</td>
+<td>enqueue 20</td>
+<td><code>[10, 20, _]</code></td>
+<td>0</td>
+<td>2</td>
+<td>write at 1</td>
+</tr>
+<tr>
+<td>3</td>
+<td>enqueue 30</td>
+<td><code>[10, 20, 30]</code></td>
+<td>0</td>
+<td>3</td>
+<td>write at 2, now full</td>
+</tr>
+<tr>
+<td>4</td>
+<td>enqueue 40</td>
+<td><code>[10, 20, 30]</code></td>
+<td>0</td>
+<td>3</td>
+<td>refused, full</td>
+</tr>
+<tr>
+<td>5</td>
+<td>dequeue</td>
+<td><code>[_, 20, 30]</code></td>
+<td>1</td>
+<td>2</td>
+<td>returns 10, front = (0+1)%3</td>
+</tr>
+<tr>
+<td>6</td>
+<td>enqueue 40</td>
+<td><code>[40, 20, 30]</code></td>
+<td>1</td>
+<td>3</td>
+<td>write at (1+2)%3 = 0 (wrapped)</td>
+</tr>
+</tbody>
+</table>
+<p>After step 6 the raw array reads <code>[40, 20, 30]</code>, but the logical queue order (front to rear) is 20, 30, 40. Always read from <code>front</code> for exactly <code>size</code> steps to get the real order.</p>
+<p>Overwrite mode (ring buffer): when full, write at the slot where the oldest item lives and advance <code>front</code> by one, so the oldest item silently disappears.</p>
+<hr />
+<h2>D. Time and Space Complexity</h2>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Time</th>
+<th>Space</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>enqueue</td>
+<td>O(1)</td>
+<td>O(1) extra</td>
+<td>One write, one modulo</td>
+</tr>
+<tr>
+<td>dequeue</td>
+<td>O(1)</td>
+<td>O(1) extra</td>
+<td>One read, one modulo</td>
+</tr>
+<tr>
+<td>peek front / rear</td>
+<td>O(1)</td>
+<td>O(1) extra</td>
+<td>Direct index</td>
+</tr>
+<tr>
+<td>is_empty / is_full</td>
+<td>O(1)</td>
+<td>O(1) extra</td>
+<td>Compare size or indexes</td>
+</tr>
+<tr>
+<td>display (logical view)</td>
+<td>O(size)</td>
+<td>O(size)</td>
+<td>Visit each item once</td>
+</tr>
+<tr>
+<td>whole structure</td>
+<td>-</td>
+<td>O(capacity)</td>
+<td>Fixed array</td>
+</tr>
+<tr>
+<td>Plain list <code>pop(0)</code> queue (for contrast)</td>
+<td>O(n) per dequeue</td>
+<td>O(n)</td>
+<td>Every item shifts left</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>E. Problems for Practice</h2>
+<table>
+<thead>
+<tr>
+<th>No</th>
+<th>Title</th>
+<th>Difficulty</th>
+<th>Concept</th>
+<th>Filename</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Basic Fixed-Size Circular Queue</td>
+<td>Easy</td>
+<td>enqueue/dequeue, modulo wrap, size counter</td>
+<td><code>01_basic_circular_queue.py</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Trace Wrap-Around Indexes</td>
+<td>Easy</td>
+<td>front/rear tracing, <code>(i + 1) % n</code></td>
+<td><code>02_wraparound_index_trace.py</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Full vs Empty Without a Size Counter</td>
+<td>Medium</td>
+<td>one wasted slot, <code>(rear + 1) % n == front</code></td>
+<td><code>03_full_empty_one_slot_wasted.py</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Peek Front/Rear and Error Handling</td>
+<td>Easy</td>
+<td>peek, custom exceptions, rear from front+size</td>
+<td><code>04_peek_front_rear_and_errors.py</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Display a Circular Queue</td>
+<td>Easy</td>
+<td>logical vs physical view</td>
+<td><code>05_display_queue_contents.py</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Ring Buffer That Overwrites the Oldest Item</td>
+<td>Medium</td>
+<td>overwrite on full, dropped counter</td>
+<td><code>06_ring_buffer_overwrite_oldest.py</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Josephus Problem Using a Circular Queue</td>
+<td>Medium</td>
+<td>rotate by dequeue + enqueue</td>
+<td><code>07_josephus_problem.py</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>Round-Robin CPU Scheduler</td>
+<td>Medium</td>
+<td>time quantum, re-enqueue unfinished work</td>
+<td><code>08_round_robin_scheduler.py</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>Moving Average from a Data Stream</td>
+<td>Medium</td>
+<td>circular buffer as sliding window, running total</td>
+<td><code>09_moving_average_data_stream.py</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>Circular Deque</td>
+<td>Medium</td>
+<td>backward wrap <code>(i - 1) % n</code>, both ends O(1)</td>
+<td><code>10_circular_deque.py</code></td>
+</tr>
+</tbody>
+</table>
+<p>Try each problem yourself first, then compare with the solution file.</p>
+<h3>Problem 1: Basic Fixed-Size Circular Queue (<code>01_basic_circular_queue.py</code>)</h3>
+<p><strong>Statement.</strong> Implement a queue with a fixed capacity using a Python list as a ring. Support <code>enqueue(value)</code>, <code>dequeue()</code>, <code>is_empty()</code> and <code>is_full()</code>. Enqueue on a full queue and dequeue on an empty queue must be refused safely (no crash).</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Input : capacity = 3; enqueue 10, 20, 30, 40; dequeue; enqueue 40; dequeue all
+Output: enqueue 40 (first time) -&gt; REFUSED (full)
+        dequeue -&gt; 10
+        raw slots: [40, 20, 30] front = 1
+        dequeues then give 20, 30, 40; one more dequeue -&gt; None
+</code></pre>
+<p><strong>Constraints and edge cases.</strong> Enqueue when full, dequeue when empty, capacity 1, reusing a slot after wrap-around.</p>
+<p><strong>Hints.</strong>
+- Store <code>front</code> (oldest item) and <code>size</code>. You do not need a separate <code>rear</code> variable.
+- Where does the next item go? Think "front plus size, wrapped by the capacity".
+- After a dequeue, move <code>front</code> forward by one with wrapping, and clear the old slot.
+- A size counter answers full and empty without any guessing.</p>
+<h3>Problem 2: Trace Wrap-Around Indexes (<code>02_wraparound_index_trace.py</code>)</h3>
+<p><strong>Statement.</strong> Given a capacity and operations (<code>E x</code> to enqueue x, <code>D</code> to dequeue), simulate a circular queue and print the front index, rear index and raw array after every step. Highlight the moment the rear wraps back to 0.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Input : capacity = 4; ops = E 1, E 2, E 3, E 4, E 9, D, D, E 5, E 6, D
+Output: E 4  front=0 rear=3 [1, 2, 3, 4]  ok
+        E 9  front=0 rear=3 [1, 2, 3, 4]  full
+        D    front=1 rear=3 [None, 2, 3, 4]  removed 1
+        E 5  front=2 rear=0 [5, None, 3, 4]  ok, rear WRAPPED to 0
+</code></pre>
+<p><strong>Constraints and edge cases.</strong> Full or empty operations are reported, not crashed; rear wrapping to 0 while front is still above 0.</p>
+<p><strong>Hints.</strong>
+- Here <code>rear</code> means the index of the last stored item; start it at -1 so the first enqueue lands on 0.
+- Advance <code>rear</code> with the wrap formula before writing.
+- Detect the wrap by checking whether the new rear is 0 after being non-zero.
+- Print a row after every operation, including rejected ones.</p>
+<h3>Problem 3: Full vs Empty Without a Size Counter (<code>03_full_empty_one_slot_wasted.py</code>)</h3>
+<p><strong>Statement.</strong> Implement a circular queue that stores only <code>front</code> and <code>rear</code> (no size counter). Decide empty and full using index comparisons only. A queue with n slots holds at most n - 1 items.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Input : n = 4 slots (usable capacity 3); enqueue 1, 2, 3, 4; dequeue; enqueue 4
+Output: enq 3 -&gt; ok      front=0 rear=3 slots=[1, 2, 3, None] ... full=True
+        enq 4 -&gt; refused front=0 rear=3 ...
+        deq -&gt; 1
+        enq 4 -&gt; True    front=1 rear=0 slots=[None, 2, 3, 4] ... full=True
+</code></pre>
+<p><strong>Constraints and edge cases.</strong> A queue with 1 slot could store nothing, so reject slot counts below 2; both pointers wrap independently.</p>
+<p><strong>Hints.</strong>
+- Here <code>front</code> is the oldest item and <code>rear</code> is the NEXT free slot.
+- Empty: the two pointers are equal.
+- Full: moving <code>rear</code> one step forward would land on <code>front</code>.
+- Draw four slots on paper and fill them: you will see why one slot must stay unused.</p>
+<h3>Problem 4: Peek Front/Rear and Error Handling (<code>04_peek_front_rear_and_errors.py</code>)</h3>
+<p><strong>Statement.</strong> Extend a circular queue with <code>peek_front()</code> and <code>peek_rear()</code> that return values without removing them. Instead of returning None, raise <code>QueueFullError</code> on enqueue to a full queue and <code>QueueEmptyError</code> when dequeuing or peeking an empty queue.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Input : capacity = 3; peek on empty; enqueue 5, 6, 7; enqueue 8; dequeue; enqueue 8
+Output: peek_front on empty -&gt; ERROR: no front item: queue is empty
+        front: 5 | rear: 7
+        enqueue 8 on full -&gt; ERROR: queue is full (capacity 3)
+        raw: [8, 6, 7] | front: 6 | rear: 8
+</code></pre>
+<p><strong>Constraints and edge cases.</strong> Peeking when empty; peeking rear when items wrap past the array end; capacity 1 (front and rear are the same item).</p>
+<p><strong>Hints.</strong>
+- Define two small exception classes inheriting from <code>Exception</code>.
+- The rear item index is "front plus size minus one", wrapped.
+- Why exceptions? A stored <code>None</code> would be indistinguishable from "nothing there".
+- Wrap the demo calls in try/except and print the message.</p>
+<h3>Problem 5: Display a Circular Queue (<code>05_display_queue_contents.py</code>)</h3>
+<p><strong>Statement.</strong> Add <code>logical_view()</code> (items in queue order, front to rear) and <code>physical_view()</code> (raw array with <code>_</code> for empty slots and markers on the front and rear).</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Input : capacity = 5; enqueue 1..5; dequeue twice; enqueue 6, 7
+Output: empty   logical: [] | physical: _ | _ | _ | _ | _
+        full    logical: [1, 2, 3, 4, 5] | physical: 1F | 2 | 3 | 4 | 5R
+        wrapped logical: [3, 4, 5, 6, 7] | physical: 6 | 7R | 3F | 4 | 5
+</code></pre>
+<p><strong>Constraints and edge cases.</strong> Empty queue (no markers); full queue; wrapped contents.</p>
+<p><strong>Hints.</strong>
+- Logical view: loop exactly <code>size</code> times, visiting <code>(front + i)</code> wrapped.
+- Do not stop "when you return to front": on a full queue you start there.
+- Physical view: loop over every index; mark index <code>front</code> and the last item's index only if the queue is not empty.
+- Notice how logical and physical orders differ after wrap-around.</p>
+<h3>Problem 6: Ring Buffer That Overwrites the Oldest Item (<code>06_ring_buffer_overwrite_oldest.py</code>)</h3>
+<p><strong>Statement.</strong> Build a "last N events" log: a circular queue where a new item REPLACES the oldest one when full instead of being refused. Provide <code>add(value)</code> and <code>contents()</code> (oldest to newest), and count dropped items.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Input : capacity = 3; add 1, 2, 3, 4, 5
+Output: add 3 -&gt; contents: [1, 2, 3] | raw: [1, 2, 3] | dropped: 0
+        add 4 -&gt; contents: [2, 3, 4] | raw: [4, 2, 3] | dropped: 1
+        add 5 -&gt; contents: [3, 4, 5] | raw: [4, 5, 3] | dropped: 2
+</code></pre>
+<p><strong>Constraints and edge cases.</strong> Fewer items than capacity (nothing dropped); capacity 1 keeps only the latest; many more items than capacity.</p>
+<p><strong>Hints.</strong>
+- When there is room, the write position is front plus size, wrapped.
+- When full, that same position equals <code>front</code>: overwrite it.
+- After overwriting, advance <code>front</code> so the new oldest item is correct; do not change <code>size</code>.
+- Increase the dropped counter only in the full case.</p>
+<h3>Problem 7: Josephus Problem Using a Circular Queue (<code>07_josephus_problem.py</code>)</h3>
+<p><strong>Statement.</strong> n people stand in a circle numbered 1..n. Starting from person 1, every k-th person is eliminated and counting continues from the next person. Return the elimination order and the last survivor.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Input : n = 7, k = 3
+Output: eliminated [3, 6, 2, 7, 5, 1] | survivor 4
+Also  : n=5 k=1 -&gt; survivor 5 ; n=1 k=4 -&gt; survivor 1 ; n=6 k=10 -&gt; survivor 2
+</code></pre>
+<p><strong>Constraints and edge cases.</strong> k = 1; n = 1; k larger than n (several laps).</p>
+<p><strong>Hints.</strong>
+- Put the people in the queue in order.
+- To "skip" a person, dequeue them and enqueue them again at the back.
+- The k-th person is dequeued and NOT re-added; record who left.
+- Stop when one person remains. The solution also checks against the known recurrence (survivor index for n built from n - 1 plus k, taken modulo n): try deriving it.</p>
+<h3>Problem 8: Round-Robin CPU Scheduler (<code>08_round_robin_scheduler.py</code>)</h3>
+<p><strong>Statement.</strong> Each process has a name and burst time. The CPU gives each process at most <code>quantum</code> time units per turn, in circular order; an unfinished process goes to the back of the queue. Print each process's finish time and waiting time (all arrive at time 0).</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Input : P1:5, P2:3, P3:1, quantum = 2
+Output: t= 2: P1 ran 2 unit(s), 3 left
+        ...
+        P1: burst=5 finish=9 waiting=4
+        P2: burst=3 finish=8 waiting=5
+        P3: burst=1 finish=5 waiting=4
+        With quantum 10 it behaves like first come, first served.
+</code></pre>
+<p><strong>Constraints and edge cases.</strong> Quantum larger than every burst; burst of 0; a single process.</p>
+<p><strong>Hints.</strong>
+- Queue items are (name, remaining time) pairs.
+- Each turn: dequeue, run for the smaller of quantum and remaining, add that to the clock.
+- If time remains, enqueue again; otherwise record the finish time.
+- Waiting time = finish time minus burst time (because arrival is 0).</p>
+<h3>Problem 9: Moving Average from a Data Stream (<code>09_moving_average_data_stream.py</code>)</h3>
+<p><strong>Statement.</strong> Numbers arrive one by one. After each number, report the average of the last <code>window</code> numbers (or of all so far if fewer have arrived). Memory must stay O(window).</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Input : window = 3; stream = 1, 10, 3, 5, 8, 2
+Output: value  1 -&gt; average 1.0000
+        value 10 -&gt; average 5.5000
+        value  3 -&gt; average 4.6667
+        value  5 -&gt; average 6.0000
+        window 1: [4.0, 9.0, -2.0]   (for a different small stream)
+</code></pre>
+<p><strong>Constraints and edge cases.</strong> Fewer numbers than the window; window of 1; negative numbers and floats.</p>
+<p><strong>Hints.</strong>
+- Keep a ring of <code>window</code> slots, a count of items seen (capped), and a running total.
+- Do not re-add the whole window every time.
+- When the ring is full, the slot you are about to overwrite holds the value leaving the window: subtract it from the total first.
+- Divide by the number of values currently stored, not by the window size.</p>
+<h3>Problem 10: Circular Deque (<code>10_circular_deque.py</code>)</h3>
+<p><strong>Statement.</strong> Implement a fixed-capacity double-ended queue on a ring with <code>insert_front</code>, <code>insert_rear</code>, <code>delete_front</code>, <code>delete_rear</code>, <code>get_front</code>, <code>get_rear</code>, <code>is_empty</code>, <code>is_full</code>, all in O(1).</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">Input : capacity = 4; insert_rear 1, 2; insert_front 3, 4; insert_rear 5; delete_rear; delete_front
+Output: insert_front 4     raw=[1, 2, 4, 3] front_index=2 front=4 rear=2
+        insert_rear 5 on full -&gt; False
+        delete_rear -&gt; 2
+        delete_front -&gt; 4
+</code></pre>
+<p><strong>Constraints and edge cases.</strong> Insert at front of an empty deque; delete from empty / insert into full; front moving below index 0; capacity 1.</p>
+<p><strong>Hints.</strong>
+- Keep <code>front</code> and <code>size</code>, as in problem 1.
+- Insert at front: step <code>front</code> BACKWARD with wrapping first, then write.
+- Insert at rear: write at front plus size, wrapped.
+- Delete at rear needs no pointer move except reducing <code>size</code>; its slot is front plus size minus one.
+- Python's <code>%</code> returns a non-negative result for a negative left side, so <code>(0 - 1) % n</code> is <code>n - 1</code> (PHP would give a negative number, so be careful if you port this).</p>
+<hr />
+<h2>F. Installation Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python version</td>
+<td>Python 3.8 or newer</td>
+</tr>
+<tr>
+<td>Packages</td>
+<td>None. Every file uses only the standard library</td>
+</tr>
+<tr>
+<td>Third-party installs</td>
+<td>Not needed (no NumPy in this topic)</td>
+</tr>
+</tbody>
+</table>
+<p>Check your version:</p>
+<pre><code class="language-bash">python --version
+</code></pre>
+<hr />
+<h2>G. How to Run the Files</h2>
+<ol>
+<li>Open a terminal: Windows - Command Prompt or PowerShell (or the terminal in VS Code); Linux/macOS - Terminal.</li>
+<li>Go to the topic folder.</li>
+<li>Run a file.</li>
+</ol>
+<p><strong>Windows</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice\07-Circular-Queue
+python 01_basic_circular_queue.py
+</code></pre>
+<p>If <code>python</code> is not recognised, use the launcher: <code>py 01_basic_circular_queue.py</code> (and <code>py --version</code>).</p>
+<p><strong>Linux / macOS</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice/07-Circular-Queue
+python3 01_basic_circular_queue.py
+python3 --version
+</code></pre>
+<p>Each file is standalone: it needs no other file and no input from you.</p>
+<hr />
+<h2>H. Revision Notes</h2>
+<p><strong>Key concepts</strong>
+- A circular queue is a fixed array plus wrap-around indexing with <code>%</code>.
+- <code>front</code> + <code>size</code> is the simplest bookkeeping: rear slot is <code>(front + size) % capacity</code>.
+- Without a size counter, <code>front == rear</code> is ambiguous; waste one slot to fix it.
+- Ring buffer = overwrite the oldest when full. Circular deque = also step backward with <code>(i - 1) % n</code>.
+- All core operations are O(1) with O(capacity) memory.</p>
+<p><strong>Common mistakes</strong>
+- Forgetting the modulo so an index runs past the end.
+- Treating <code>front == rear</code> as empty when the queue could be full.
+- Displaying by looping "until you return to front" (fails on a full queue); loop <code>size</code> times.
+- Not clearing or tracking size after a dequeue, so stale values look real.
+- Reading raw array order as queue order after wrap-around.
+- In overwrite mode, forgetting to advance <code>front</code>.</p>
+<p><strong>Interview tips</strong>
+- State your full/empty strategy (size counter vs wasted slot) before coding.
+- Walk through a wrap-around by hand with capacity 3 or 4.
+- Mention that <code>collections.deque</code> exists, but be ready to build the ring yourself.
+- Know the classics built on this idea: Design Circular Queue/Deque, Moving Average from Data Stream, Josephus, Round Robin.</p>

@@ -1,0 +1,493 @@
+<h1>03 - Singly Linked List</h1>
+<p>Learn to store data as a chain of nodes and manipulate it by rewiring pointers. Ten programs cover creation, insertion, deletion, search, reversal, middle, cycles, duplicates, nth from end and merging.</p>
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#a-topic-introduction">A. Topic Introduction</a></li>
+<li><a href="#b-core-concepts">B. Core Concepts</a></li>
+<li><a href="#c-how-it-works">C. How It Works</a></li>
+<li><a href="#d-time-and-space-complexity">D. Time and Space Complexity</a></li>
+<li><a href="#e-problems-for-practice">E. Problems for Practice</a></li>
+<li><a href="#f-installation-requirements">F. Installation Requirements</a></li>
+<li><a href="#g-how-to-run-the-files">G. How to Run the Files</a></li>
+<li><a href="#h-revision-notes">H. Revision Notes</a></li>
+</ul>
+<hr />
+<h2>A. Topic Introduction</h2>
+<p><strong>What it is.</strong> A singly linked list is a chain of small objects called nodes. Each node stores a value and a reference (<code>next</code>) to the following node. The last node points to <code>None</code>. You only hold the first node, called the <code>head</code>.</p>
+<p><strong>Why it matters in DSA.</strong> Linked lists teach you pointer thinking: how to rewire references without losing the rest of the chain. Almost every tree, graph and cache (LRU) problem builds on this skill, and interviewers love list questions (reverse, cycle, merge).</p>
+<p><strong>Where it is used.</strong> Undo history, music playlists, memory allocators, hash-table buckets (chaining), and the building blocks of stacks and queues.</p>
+<p><strong>Everyday analogy.</strong> A treasure hunt: each clue tells you where the next clue is hidden. You cannot jump to clue 5; you must follow clues 1, 2, 3, 4 first. A Python list is more like a row of numbered lockers where you can open locker 5 directly.</p>
+<p>If you know Laravel: a Collection (backed by an array) gives you <code>$items[5]</code> instantly, whereas a linked list is like a chain of Eloquent models where each model only knows its <code>next_id</code> - to reach item 5 you must hop four times.</p>
+<hr />
+<h2>B. Core Concepts</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Node</td>
+<td>Object with <code>data</code> and <code>next</code>.</td>
+</tr>
+<tr>
+<td>Head</td>
+<td>Reference to the first node; the only entry point.</td>
+</tr>
+<tr>
+<td>Tail</td>
+<td>The last node (its <code>next</code> is <code>None</code>).</td>
+</tr>
+<tr>
+<td>Traversal</td>
+<td>Walking with a moving <code>current</code> pointer until it is <code>None</code>.</td>
+</tr>
+<tr>
+<td>Dummy (sentinel) node</td>
+<td>A fake node placed before the head to simplify edge cases such as deleting the head.</td>
+</tr>
+<tr>
+<td>Slow / fast pointers</td>
+<td>Two pointers moving at different speeds (1 step and 2 steps).</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Picture of a list</strong></p>
+<pre><code class="language-text">head
+ |
+ v
+[10|*]---&gt;[20|*]---&gt;[30|*]---&gt;[40|/]    (/ means None)
+</code></pre>
+<p><strong>Array versus linked list</strong></p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Python list</th>
+<th>Singly linked list</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Access by index</td>
+<td>O(1)</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>Insert at front</td>
+<td>O(n)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>Insert at end</td>
+<td>O(1) amortised</td>
+<td>O(1) with tail pointer, else O(n)</td>
+</tr>
+<tr>
+<td>Delete after a known node</td>
+<td>O(n)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>Search</td>
+<td>O(n)</td>
+<td>O(n)</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-mermaid">flowchart LR
+    H((head)) --&gt; N1[&quot;10&quot;] --&gt; N2[&quot;20&quot;] --&gt; N3[&quot;30&quot;] --&gt; NONE[&quot;None&quot;]
+</code></pre>
+<hr />
+<h2>C. How It Works</h2>
+<p><strong>Dry run 1: insert 25 at index 2 of <code>10 -&gt; 20 -&gt; 30</code></strong></p>
+<pre><code class="language-text">Step 1: walk to the node BEFORE index 2 (the node holding 20)
+        10 -&gt; [20] -&gt; 30
+Step 2: new.next = 20.next          (new -&gt; 30 first, so 30 is not lost)
+        25 -&gt; 30
+Step 3: 20.next = new
+        10 -&gt; 20 -&gt; 25 -&gt; 30
+</code></pre>
+<p>Order matters: if you set <code>20.next = new</code> first, you lose the reference to 30.</p>
+<p><strong>Dry run 2: reverse <code>1 -&gt; 2 -&gt; 3</code></strong> (three pointers: <code>prev</code>, <code>current</code>, <code>next_node</code>)</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>prev</th>
+<th>current</th>
+<th>Action</th>
+<th>List state</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>start</td>
+<td>None</td>
+<td>1</td>
+<td>-</td>
+<td>1 -&gt; 2 -&gt; 3</td>
+</tr>
+<tr>
+<td>1</td>
+<td>1</td>
+<td>2</td>
+<td>save next, point 1 back to None</td>
+<td>1 -&gt; None, 2 -&gt; 3</td>
+</tr>
+<tr>
+<td>2</td>
+<td>2</td>
+<td>3</td>
+<td>point 2 back to 1</td>
+<td>2 -&gt; 1 -&gt; None, 3</td>
+</tr>
+<tr>
+<td>3</td>
+<td>3</td>
+<td>None</td>
+<td>point 3 back to 2</td>
+<td>3 -&gt; 2 -&gt; 1 -&gt; None</td>
+</tr>
+</tbody>
+</table>
+<p><code>prev</code> is the new head.</p>
+<p><strong>Dry run 3: slow and fast pointers find the middle of <code>1 -&gt; 2 -&gt; 3 -&gt; 4 -&gt; 5</code></strong></p>
+<pre><code class="language-text">start : slow=1 fast=1
+step 1: slow=2 fast=3
+step 2: slow=3 fast=5   fast.next is None -&gt; stop
+middle = 3
+</code></pre>
+<p>Fast moves twice as quickly, so when it reaches the end, slow is halfway.</p>
+<p><strong>Dry run 4: Floyd cycle detection</strong></p>
+<p>If a cycle exists, the fast pointer eventually laps the slow pointer inside the loop and they meet. If there is no cycle, fast reaches <code>None</code>.</p>
+<hr />
+<h2>D. Time and Space Complexity</h2>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Time</th>
+<th>Space</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Access / search by position or value</td>
+<td>O(n)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>Insert / delete at head</td>
+<td>O(1)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>Insert at tail (with tail pointer)</td>
+<td>O(1)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>Insert / delete at a position</td>
+<td>O(n)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>Reverse (iterative)</td>
+<td>O(n)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>Reverse (recursive)</td>
+<td>O(n)</td>
+<td>O(n) stack</td>
+</tr>
+<tr>
+<td>Find middle, detect cycle (two pointers)</td>
+<td>O(n)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>Remove duplicates (unsorted, with set)</td>
+<td>O(n)</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>Merge two sorted lists</td>
+<td>O(n + m)</td>
+<td>O(1) iterative</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>E. Problems for Practice</h2>
+<table>
+<thead>
+<tr>
+<th>No</th>
+<th>Title</th>
+<th>Difficulty</th>
+<th>Concept</th>
+<th>Python File</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Node Creation and Traversal</td>
+<td>Easy</td>
+<td>Node class, head, traversal</td>
+<td><code>01_node_creation_and_traversal.py</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Insertion at Head, Tail and Any Position</td>
+<td>Easy</td>
+<td>Pointer rewiring, bounds checking</td>
+<td><code>02_insertion_operations.py</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Delete a Node by Value and by Position</td>
+<td>Easy</td>
+<td>Unlinking nodes, previous pointer</td>
+<td><code>03_deletion_operations.py</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Search an Element and Count Occurrences</td>
+<td>Easy</td>
+<td>Linear scan, first index, counting</td>
+<td><code>04_search_and_count.py</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Reverse a Singly Linked List</td>
+<td>Medium</td>
+<td>Three-pointer reversal, recursion</td>
+<td><code>05_reverse_linked_list.py</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Find the Middle Node (Slow and Fast Pointers)</td>
+<td>Medium</td>
+<td>Two-pointer technique</td>
+<td><code>06_find_middle_node.py</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Detect a Cycle (Floyd's Algorithm) and Find Where It Starts</td>
+<td>Medium</td>
+<td>Floyd tortoise and hare, cycle entry</td>
+<td><code>07_detect_cycle.py</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>Remove Duplicates from a Linked List</td>
+<td>Medium</td>
+<td>Sorted and unsorted de-duplication, set</td>
+<td><code>08_remove_duplicates.py</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>Nth Node from the End (and Remove It)</td>
+<td>Medium</td>
+<td>Gap of n between two pointers, dummy node</td>
+<td><code>09_nth_node_from_end.py</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>Merge Two Sorted Linked Lists</td>
+<td>Medium</td>
+<td>Splicing nodes, dummy head, recursion</td>
+<td><code>10_merge_two_sorted_lists.py</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Problem 1 - Node Creation and Traversal (<code>01_node_creation_and_traversal.py</code>)</h3>
+<p><strong>Statement.</strong> Build a singly linked list from a Python list of values, traverse it from head to tail printing every value, and report its length.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">values = [10, 20, 30, 40]
+Linked list: 10 -&gt; 20 -&gt; 30 -&gt; 40 -&gt; None
+Length: 4
+Empty list: None, length 0
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty input leaves <code>head</code> as <code>None</code>; a single value makes head and tail the same node.</p>
+<p><strong>Hints.</strong>
+- A node needs only two fields: the value and the next reference.
+- Keep a <code>tail</code> pointer while building so each append is O(1).
+- Traverse with <code>current = head</code> and stop when <code>current</code> becomes <code>None</code>.</p>
+<h3>Problem 2 - Insertion at Head, Tail and Any Position (<code>02_insertion_operations.py</code>)</h3>
+<p><strong>Statement.</strong> Implement <code>insert_at_head(value)</code>, <code>insert_at_tail(value)</code> and <code>insert_at_position(index, value)</code>. Invalid positions must be rejected.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">tail 20, tail 30, head 10  -&gt; [10, 20, 30]
+insert_at_position(2, 25)  -&gt; True  [10, 20, 25, 30]
+insert_at_position(9, 99)  -&gt; False [10, 20, 25, 30]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Insert into an empty list; index 0 (new head); index equal to length (new tail); negative or too large index returns <code>False</code> and changes nothing.</p>
+<p><strong>Hints.</strong>
+- Index 0 is a special case: there is no previous node.
+- For other positions walk to the node just before the index.
+- Connect the new node to the rest first, then connect the previous node to the new node.</p>
+<h3>Problem 3 - Delete a Node by Value and by Position (<code>03_deletion_operations.py</code>)</h3>
+<p><strong>Statement.</strong> Implement <code>delete_value(value)</code>, removing the first node holding that value, and <code>delete_at(index)</code>. Both return <code>True</code> if something was deleted, else <code>False</code>.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">list = 5 -&gt; 10 -&gt; 15 -&gt; 20 -&gt; 25
+delete_value(5)  -&gt; True [10, 15, 20, 25]
+delete_at(1)     -&gt; True
+delete_value(99) -&gt; False
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list; deleting the head, the tail or the only node; value absent; negative or out-of-range index; duplicates (only the first match goes).</p>
+<p><strong>Hints.</strong>
+- Track a <code>previous</code> pointer while searching.
+- Deleting the head just moves <code>head</code> forward.
+- Unlink by setting <code>previous.next = current.next</code>.</p>
+<h3>Problem 4 - Search an Element and Count Occurrences (<code>04_search_and_count.py</code>)</h3>
+<p><strong>Statement.</strong> Given a list and a target, return the zero-based index of the first occurrence (or -1) and also count how many times the target appears.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">list = 7 -&gt; 3 -&gt; 9 -&gt; 3 -&gt; 5
+target 3 -&gt; index 1, count 2
+target 8 -&gt; index -1, count 0
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list; target missing; target at head or tail; duplicates (index reports only the first).</p>
+<p><strong>Hints.</strong>
+- One traversal with an index counter is enough.
+- The index function may stop early, the count function must scan everything.
+- Return -1 only after the whole list was checked.</p>
+<h3>Problem 5 - Reverse a Singly Linked List (<code>05_reverse_linked_list.py</code>)</h3>
+<p><strong>Statement.</strong> Reverse the direction of every link so the last node becomes the head. Provide an iterative and a recursive solution.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">1 -&gt; 2 -&gt; 3 -&gt; 4 -&gt; 5
+Reversed: [5, 4, 3, 2, 1]
+Empty: [], single: [42]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list returns <code>None</code>; a single node returns itself; the recursive version can hit Python's recursion limit (about 1000 frames) on long lists.</p>
+<p><strong>Hints.</strong>
+- Keep <code>prev</code>, <code>current</code> and a saved <code>next_node</code>.
+- Save the next node before you overwrite <code>current.next</code>.
+- Recursive idea: reverse the rest, then make the second node point back to the first.</p>
+<h3>Problem 6 - Find the Middle Node (Slow and Fast Pointers) (<code>06_find_middle_node.py</code>)</h3>
+<p><strong>Statement.</strong> Return the middle node in one pass. For an even length return the second of the two middle nodes.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[1, 2, 3, 4, 5]    -&gt; 3
+[1, 2, 3, 4, 5, 6] -&gt; 4
+[4, 8] -&gt; 8, [] -&gt; None
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list returns <code>None</code>; one node returns itself; two nodes return the second.</p>
+<p><strong>Hints.</strong>
+- Move slow one step and fast two steps.
+- Loop while fast and fast.next both exist.
+- When fast stops, slow is at the middle.</p>
+<h3>Problem 7 - Detect a Cycle (Floyd's Algorithm) and Find Where It Starts (<code>07_detect_cycle.py</code>)</h3>
+<p><strong>Statement.</strong> Decide whether a list has a cycle (some <code>next</code> points back to an earlier node). If it does, return the node where the cycle begins.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">1-2-3-4-5, tail -&gt; 3 : cycle starts at 3
+1-2-3 (no cycle)     : none
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list or single node without a self-loop; self-loop; whole list is a cycle (tail points to head).</p>
+<p><strong>Hints.</strong>
+- A set of visited nodes works but costs O(n) memory.
+- Fast and slow pointers meet inside the cycle if one exists.
+- After they meet, restart one pointer at the head and move both one step at a time; they meet at the cycle start.</p>
+<h3>Problem 8 - Remove Duplicates from a Linked List (<code>08_remove_duplicates.py</code>)</h3>
+<p><strong>Statement.</strong> Remove repeated values. Part A: the list is sorted. Part B: the list is unsorted; keep the first occurrence of each value.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">sorted   1,1,2,3,3,3,4 -&gt; [1, 2, 3, 4]
+unsorted 4,2,4,1,2,5   -&gt; [4, 2, 1, 5]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list or single node; all values equal; duplicates at the tail. Without a set, a nested-loop approach gives O(1) space but O(n^2) time.</p>
+<p><strong>Hints.</strong>
+- Sorted: duplicates are neighbours, compare <code>current</code> with <code>current.next</code>.
+- Unsorted: remember seen values in a set.
+- Only advance after you decide not to delete the next node.</p>
+<h3>Problem 9 - Nth Node from the End (and Remove It) (<code>09_nth_node_from_end.py</code>)</h3>
+<p><strong>Statement.</strong> Return the value of the nth node counting from the end (n = 1 is the last node) in one pass, then remove that node.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">1 -&gt; 2 -&gt; 3 -&gt; 4 -&gt; 5, n = 2 -&gt; value 4
+remove n = 2 -&gt; [1, 2, 3, 5]
+n = 6 -&gt; None
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> n larger than the length or n &lt;= 0 is invalid; n equal to the length removes the head; single-node list.</p>
+<p><strong>Hints.</strong>
+- Move a lead pointer n steps ahead first.
+- Then move both pointers together until the lead reaches the end.
+- A dummy node before the head makes removing the head the same as any other node.</p>
+<h3>Problem 10 - Merge Two Sorted Linked Lists (<code>10_merge_two_sorted_lists.py</code>)</h3>
+<p><strong>Statement.</strong> Given two ascending sorted lists, splice their nodes into one sorted list and return its head. Reuse existing nodes.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">list1 = 1 -&gt; 3 -&gt; 5 -&gt; 7
+list2 = 2 -&gt; 3 -&gt; 6
+Merged: [1, 2, 3, 3, 5, 6, 7]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> One or both lists empty; very different lengths; equal values (take list1 first to stay stable).</p>
+<p><strong>Hints.</strong>
+- Use a dummy node and a <code>tail</code> pointer to build the result.
+- Always attach the smaller front node and advance that list.
+- When one list ends, attach the remainder of the other.</p>
+<hr />
+<h2>F. Installation Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python version</td>
+<td>Python 3.8 or newer</td>
+</tr>
+<tr>
+<td>Packages</td>
+<td>None. Standard library only</td>
+</tr>
+<tr>
+<td>Extra installation</td>
+<td>Nothing to install beyond Python itself</td>
+</tr>
+</tbody>
+</table>
+<p>Check your installation with <code>python --version</code> (see section G).</p>
+<hr />
+<h2>G. How to Run the Files</h2>
+<ol>
+<li>Open a terminal: <strong>Windows</strong> - press <code>Win + R</code>, type <code>cmd</code> (or open PowerShell / VS Code terminal). <strong>Linux/macOS</strong> - open Terminal.</li>
+<li>Verify Python:
+   <code>bash
+   python --version      # Windows (or: py --version)
+   python3 --version     # Linux / macOS</code></li>
+<li>Move into the topic folder and run a file.</li>
+</ol>
+<p><strong>Windows</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice\03-Singly-Linked-List
+python 01_node_creation_and_traversal.py
+</code></pre>
+<p>If <code>python</code> is not recognised, use the Python launcher: <code>py 01_node_creation_and_traversal.py</code>.</p>
+<p><strong>Linux / macOS</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice/03-Singly-Linked-List
+python3 01_node_creation_and_traversal.py
+</code></pre>
+<p>Every file is a standalone program: it needs no other file and no internet.</p>
+<hr />
+<h2>H. Revision Notes</h2>
+<p><strong>Key concepts</strong>
+- A node holds data and <code>next</code>; the head is your only handle on the list.
+- Insert and delete are O(1) once you stand at the right node; getting there is O(n).
+- Rewire pointers in the safe order: connect the new node forward before connecting backward.
+- Slow/fast pointers solve middle, cycle and nth-from-end in one pass.
+- A dummy node removes special cases for the head.</p>
+<p><strong>Common mistakes</strong>
+- Losing the rest of the list by overwriting <code>next</code> before saving it.
+- Forgetting the empty list and one-node list.
+- Not updating <code>tail</code> after deleting the last node (when a tail is kept).
+- Accessing <code>current.next.next</code> without checking <code>current.next</code>.
+- Infinite loops on lists that contain a cycle.</p>
+<p><strong>Interview tips</strong>
+- Draw boxes and arrows and update them step by step before coding.
+- Mention the dummy-node trick and the two-pointer trick by name.
+- State both time and space: reversing is O(n) time, O(1) space iteratively.
+- Offer the set-based solution first for cycle detection, then improve to Floyd.
+- Ask whether the list is sorted and whether duplicates are allowed.</p>

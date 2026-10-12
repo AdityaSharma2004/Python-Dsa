@@ -1,0 +1,509 @@
+<h1>16 - Divide and Conquer</h1>
+<p>Learn the divide, conquer and combine pattern through ten classic problems, from binary search to Strassen matrix multiplication. Each program is a standalone file with a worked explanation in its docstring.</p>
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#a-topic-introduction">A. Topic Introduction</a></li>
+<li><a href="#b-core-concepts">B. Core Concepts</a></li>
+<li><a href="#c-how-it-works">C. How It Works</a></li>
+<li><a href="#d-time-and-space-complexity">D. Time and Space Complexity</a></li>
+<li><a href="#e-problems-for-practice">E. Problems for Practice</a></li>
+<li><a href="#f-installation-requirements">F. Installation Requirements</a></li>
+<li><a href="#g-how-to-run-the-files">G. How to Run the Files</a></li>
+<li><a href="#h-revision-notes">H. Revision Notes</a></li>
+</ul>
+<hr />
+<h2>A. Topic Introduction</h2>
+<p><strong>What it is.</strong> Divide and conquer solves a big problem in three moves: <strong>divide</strong> it into smaller copies of the same problem, <strong>conquer</strong> each copy (usually by recursion), and <strong>combine</strong> the small answers into the final answer. When a piece becomes tiny (a base case) it is solved directly.</p>
+<p><strong>Why it matters in DSA.</strong> Many of the fastest known algorithms use this pattern: binary search, merge sort, quick sort, fast exponentiation, Karatsuba multiplication and Strassen matrix multiplication. It turns a hard problem into a recurrence that you can analyse with simple rules.</p>
+<p><strong>Where it is used.</strong> Searching sorted data, large number arithmetic in cryptography, matrix and graphics computations, geometry (closest points), and parallel processing, because the halves are independent.</p>
+<p><strong>Everyday analogy.</strong> Counting votes in a big election: each booth counts its own ballots (conquer), districts add up booths, states add up districts (combine). No single person counts everything.</p>
+<p>If you know Laravel: it is like using <code>$collection-&gt;chunk()</code> to split a huge list, processing each chunk with the same function, and then merging the results with <code>reduce()</code>.</p>
+<hr />
+<h2>B. Core Concepts</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Divide</td>
+<td>Split the input into smaller subproblems of the same kind.</td>
+</tr>
+<tr>
+<td>Conquer</td>
+<td>Solve each subproblem, usually recursively.</td>
+</tr>
+<tr>
+<td>Combine</td>
+<td>Merge subproblem answers into the answer for the whole input.</td>
+</tr>
+<tr>
+<td>Base case</td>
+<td>A subproblem so small that the answer is immediate (empty list, one element).</td>
+</tr>
+<tr>
+<td>Recurrence</td>
+<td>A formula such as <code>T(n) = 2T(n/2) + n</code> that counts the work.</td>
+</tr>
+<tr>
+<td>Master theorem</td>
+<td>Shortcut to read the Big O from a recurrence <code>T(n) = aT(n/b) + f(n)</code>.</td>
+</tr>
+<tr>
+<td>Recursion depth</td>
+<td>How many nested calls are open at once; it decides stack space.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The pattern</strong></p>
+<pre><code class="language-text">solve(problem)
+    if problem is small:        return direct answer      # base case
+    left,  right = split(problem)                         # divide
+    a = solve(left)                                       # conquer
+    b = solve(right)                                      # conquer
+    return combine(a, b)                                  # combine
+</code></pre>
+<p><strong>Recursion tree for <code>n = 8</code> halving twice per level</strong></p>
+<pre><code class="language-text">level 0:                 [ 8 ]                  1 problem  of size 8
+level 1:         [ 4 ]           [ 4 ]          2 problems of size 4
+level 2:      [2]    [2]      [2]    [2]        4 problems of size 2
+level 3:     [1][1] [1][1]   [1][1] [1][1]      8 problems of size 1
+</code></pre>
+<p><strong>Flow</strong></p>
+<pre><code class="language-mermaid">flowchart TD
+    P[&quot;Problem of size n&quot;] --&gt; D[&quot;Divide into smaller parts&quot;]
+    D --&gt; C1[&quot;Conquer part 1&quot;]
+    D --&gt; C2[&quot;Conquer part 2&quot;]
+    C1 --&gt; M[&quot;Combine answers&quot;]
+    C2 --&gt; M
+    M --&gt; R[&quot;Answer for size n&quot;]
+</code></pre>
+<p><strong>Three shapes of divide and conquer in this folder</strong>
+- Throw one half away: binary search, peak finding, quickselect, fast power (only one half is solved).
+- Solve both halves and combine: max/min, majority element, maximum subarray, closest pair.
+- Fewer sub-multiplications than the obvious method: Karatsuba (3 instead of 4), Strassen (7 instead of 8).</p>
+<hr />
+<h2>C. How It Works</h2>
+<p><strong>Dry run 1: binary search for 23 in <code>[2, 5, 8, 12, 16, 23, 38, 56, 72, 91]</code></strong></p>
+<table>
+<thead>
+<tr>
+<th>low</th>
+<th>high</th>
+<th>mid</th>
+<th>data[mid]</th>
+<th>decision</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>9</td>
+<td>4</td>
+<td>16</td>
+<td>16 &lt; 23, search right half</td>
+</tr>
+<tr>
+<td>5</td>
+<td>9</td>
+<td>7</td>
+<td>56</td>
+<td>56 &gt; 23, search left half</td>
+</tr>
+<tr>
+<td>5</td>
+<td>6</td>
+<td>5</td>
+<td>23</td>
+<td>found, return 5</td>
+</tr>
+</tbody>
+</table>
+<p>Three calls for ten items: the range shrinks 10, 5, 2.</p>
+<p><strong>Dry run 2: fast power <code>3 ** 13</code></strong></p>
+<pre><code class="language-text">power(3, 13): 13 is odd  -&gt; 3 * power(3, 12)
+power(3, 12): 12 is even -&gt; half = power(3, 6); half * half
+power(3, 6) : half = power(3, 3); half * half
+power(3, 3) : odd  -&gt; 3 * power(3, 2)
+power(3, 2) : half = power(3, 1) = 3 -&gt; 9
+power(3, 3) = 27, power(3, 6) = 729, power(3, 12) = 531441, power(3, 13) = 1594323
+</code></pre>
+<p>About 6 multiplications instead of 12.</p>
+<p><strong>Dry run 3: maximum subarray, the crossing case</strong></p>
+<p>Split <code>[1, -2, 3, 4 | -1, 2, -5, 1]</code> in the middle. The best subarray is either entirely left, entirely right, or crosses the middle.
+- Best sum ending at the middle going left: <code>4, 7, 5, 6</code> so the best is 7.
+- Best sum starting just after the middle going right: <code>-1, 1, -4, -3</code> so the best is 1.
+- Crossing sum = 7 + 1 = 8 (the subarray <code>[3, 4, -1, 2]</code>). Compare with the left and right answers and keep the biggest.</p>
+<p><strong>Dry run 4: Karatsuba for <code>12 * 34</code></strong></p>
+<p>Split each number: <code>12 = 1*10 + 2</code>, <code>34 = 3*10 + 4</code>.</p>
+<pre><code class="language-text">ac = 1 * 3 = 3
+bd = 2 * 4 = 8
+(a + b)(c + d) = 3 * 7 = 21
+middle = 21 - ac - bd = 10
+result = ac * 100 + middle * 10 + bd = 300 + 100 + 8 = 408
+</code></pre>
+<p>Only 3 multiplications instead of 4.</p>
+<p><strong>Dry run 5: Strassen on 2x2 matrices</strong> (<code>A = [[1,2],[3,4]]</code>, <code>B = [[5,6],[7,8]]</code>)</p>
+<p>Seven products: <code>M1 = (1+4)(5+8) = 65</code>, <code>M2 = (3+4)*5 = 35</code>, <code>M3 = 1*(6-8) = -2</code>, <code>M4 = 4*(7-5) = 8</code>, <code>M5 = (1+2)*8 = 24</code>, <code>M6 = (3-1)(5+6) = 22</code>, <code>M7 = (2-4)(7+8) = -30</code>.
+Combine: top-left <code>M1+M4-M5+M7 = 19</code>, top-right <code>M3+M5 = 22</code>, bottom-left <code>M2+M4 = 43</code>, bottom-right <code>M1-M2+M3+M6 = 50</code>, matching <code>[[19, 22], [43, 50]]</code>.</p>
+<p><strong>Dry run 6: peak element in <code>[1, 3, 20, 4, 1, 0]</code></strong></p>
+<p>Look at the middle item and its right neighbour. If the right neighbour is bigger, a peak must exist on the right; otherwise one must exist at the middle or on the left. Middle <code>20</code> is bigger than its right neighbour <code>4</code>, so the answer is at or left of it; the search narrows to index 2 and returns 20.</p>
+<hr />
+<h2>D. Time and Space Complexity</h2>
+<table>
+<thead>
+<tr>
+<th>Problem</th>
+<th>Recurrence</th>
+<th>Time</th>
+<th>Extra space</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Binary search</td>
+<td>T(n) = T(n/2) + 1</td>
+<td>O(log n)</td>
+<td>O(log n) recursive, O(1) loop</td>
+</tr>
+<tr>
+<td>Max and min</td>
+<td>T(n) = 2T(n/2) + 2</td>
+<td>O(n) (about 3n/2 comparisons)</td>
+<td>O(log n)</td>
+</tr>
+<tr>
+<td>Fast power</td>
+<td>T(e) = T(e/2) + 1</td>
+<td>O(log e)</td>
+<td>O(log e) recursive, O(1) loop</td>
+</tr>
+<tr>
+<td>Peak element</td>
+<td>T(n) = T(n/2) + 1</td>
+<td>O(log n)</td>
+<td>O(1) iterative</td>
+</tr>
+<tr>
+<td>Majority element</td>
+<td>T(n) = 2T(n/2) + n</td>
+<td>O(n log n)</td>
+<td>O(log n)</td>
+</tr>
+<tr>
+<td>Maximum subarray</td>
+<td>T(n) = 2T(n/2) + n</td>
+<td>O(n log n)</td>
+<td>O(log n)</td>
+</tr>
+<tr>
+<td>Quickselect</td>
+<td>T(n) = T(n/2) + n (average)</td>
+<td>O(n) average, O(n^2) worst</td>
+<td>O(n) copy plus O(log n)</td>
+</tr>
+<tr>
+<td>Karatsuba</td>
+<td>T(n) = 3T(n/2) + n</td>
+<td>O(n^1.585)</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>Closest pair</td>
+<td>T(n) = 2T(n/2) + n</td>
+<td>O(n log n) textbook; this teaching version can reach O(n^2)</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>Strassen</td>
+<td>T(n) = 7T(n/2) + n^2</td>
+<td>O(n^2.807)</td>
+<td>O(n^2)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Reading a recurrence quickly</strong>
+- One half kept, constant work: <code>log n</code> (binary search).
+- Both halves, linear combine: <code>n log n</code> (merge-sort style).
+- Both halves, constant combine: <code>n</code> (max and min).
+- Fewer than 4 (or 8) subcalls than the obvious method gives a lower exponent (Karatsuba, Strassen).</p>
+<p><strong>Space.</strong> Recursion uses one stack frame per level, so a halving recursion costs <code>O(log n)</code> stack. Python's default limit (about 1000 frames) is never a problem for halving, but would be for linear recursion.</p>
+<hr />
+<h2>E. Problems for Practice</h2>
+<table>
+<thead>
+<tr>
+<th>No</th>
+<th>Title</th>
+<th>Difficulty</th>
+<th>Concept</th>
+<th>Python File</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Binary Search as Divide and Conquer</td>
+<td>Easy</td>
+<td>Halve the range, solve one half</td>
+<td><code>01_binary_search.py</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Max and Min by Divide and Conquer</td>
+<td>Easy</td>
+<td>Both halves, combine two pairs</td>
+<td><code>02_max_min_divide_conquer.py</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Fast Power</td>
+<td>Easy</td>
+<td>Exponentiation by squaring</td>
+<td><code>03_fast_power.py</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Find a Peak Element</td>
+<td>Easy</td>
+<td>Compare neighbours to choose a half</td>
+<td><code>04_find_peak_element.py</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Majority Element</td>
+<td>Medium</td>
+<td>Candidate from halves, verify by counting</td>
+<td><code>05_majority_element.py</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Maximum Subarray Sum</td>
+<td>Medium</td>
+<td>Left, right and crossing sums</td>
+<td><code>06_maximum_subarray.py</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>k-th Smallest with Quickselect</td>
+<td>Medium</td>
+<td>Partition and keep one side</td>
+<td><code>07_quickselect_kth_smallest.py</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>Karatsuba Multiplication</td>
+<td>Medium</td>
+<td>Three sub-multiplications instead of four</td>
+<td><code>08_karatsuba_multiplication.py</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>Closest Pair of Points</td>
+<td>Medium</td>
+<td>Split by x, check the middle strip</td>
+<td><code>09_closest_pair_of_points.py</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>Strassen Matrix Multiplication</td>
+<td>Medium</td>
+<td>Seven block products instead of eight</td>
+<td><code>10_strassen_matrix_multiplication.py</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Problem 1 - Binary Search as Divide and Conquer (<code>01_binary_search.py</code>)</h3>
+<p><strong>Statement.</strong> Given a sorted list and a target, return the target's index or -1. Solve it by recursively halving the search range, then compare with a loop-based version.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">data = [2, 5, 8, 12, 16, 23, 38, 56, 72, 91]
+search 23 -&gt; 5
+search 7 -&gt; -1
+empty list -&gt; -1
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list; single element; target smaller than all; target larger than all; target at the first or last position.</p>
+<p><strong>Hints.</strong>
+- Define a range <code>[low, high]</code>; if <code>low &gt; high</code> the range is empty so return -1.
+- Compute the middle with integer division and compare it with the target.
+- Recurse into only one half; there is nothing to combine.</p>
+<h3>Problem 2 - Max and Min by Divide and Conquer (<code>02_max_min_divide_conquer.py</code>)</h3>
+<p><strong>Statement.</strong> Find both the largest and smallest element of a list by splitting it in two halves, solving each half recursively and combining. Do not use the built-in <code>max()</code> or <code>min()</code>. Also count comparisons and compare with a simple scan.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[34, 7, 23, 32, 5, 62, 32, 8, -4, 19]
+divide and conquer: min=-4, max=62, comparisons=14
+simple scan       : min=-4, max=62, comparisons=18
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list (raise <code>ValueError</code>); one element; two elements; all equal; negative numbers; odd length.</p>
+<p><strong>Hints.</strong>
+- Base cases are one element (min = max = that element) and two elements (one comparison).
+- Combine by comparing the two halves' minimums and the two halves' maximums.
+- Return the pair <code>(min, max)</code> from every call.</p>
+<h3>Problem 3 - Fast Power (<code>03_fast_power.py</code>)</h3>
+<p><strong>Statement.</strong> Compute <code>base ** exp</code> using <code>O(log exp)</code> multiplications. Also support a modulus (compute <code>base ** exp % mod</code> without huge numbers) and negative exponents for float results.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">2 ** 10 = 1024
+3 ** 13 = 1594323
+2 ** -3 = 0.125
+7 ** 128 % 13 = 3
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> <code>exp = 0</code> gives 1 (even for base 0); base 0 or 1; negative exponent (use the reciprocal); <code>mod = 1</code> gives 0.</p>
+<p><strong>Hints.</strong>
+- Compute the power of half the exponent once, then square it.
+- If the exponent is odd, multiply by the base one extra time.
+- Apply the modulus after every multiplication so numbers stay small.</p>
+<h3>Problem 4 - Find a Peak Element (<code>04_find_peak_element.py</code>)</h3>
+<p><strong>Statement.</strong> A peak is an element strictly greater than its neighbours (outside the list counts as negative infinity). Given a list where adjacent elements differ, return the index of ANY peak in <code>O(log n)</code> time.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[1, 3, 20, 4, 1, 0] -&gt; peak at index 2 (value 20)
+[1, 2, 3, 4, 5] -&gt; peak at index 4
+[9, 5, 2, 1] -&gt; peak at index 0
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Single element; strictly increasing (peak at last); strictly decreasing (peak at first); several peaks (any is fine); empty list.</p>
+<p><strong>Hints.</strong>
+- Look at the middle item and its right neighbour.
+- If the right neighbour is bigger, a peak exists on the right side; otherwise on the middle or left side.
+- Keep shrinking until the range is a single index.</p>
+<h3>Problem 5 - Majority Element (<code>05_majority_element.py</code>)</h3>
+<p><strong>Statement.</strong> Given a list, return the element that appears MORE than <code>n/2</code> times, or <code>None</code> if there is none. Use divide and conquer.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[2, 2, 1, 1, 1, 2, 2] -&gt; 2
+[3, 3, 4, 2, 4, 4, 2, 4, 4] -&gt; 4
+[1, 2, 3, 4] -&gt; None
+[1, 1, 2, 2] -&gt; None
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list; single element; no majority; exactly <code>n/2</code> occurrences is NOT a majority; all equal.</p>
+<p><strong>Hints.</strong>
+- A majority of the whole list must be a majority in at least one half.
+- Find each half's candidate, then count both candidates over the whole range.
+- Return the candidate whose count is more than half of the range length.</p>
+<h3>Problem 6 - Maximum Subarray Sum (<code>06_maximum_subarray.py</code>)</h3>
+<p><strong>Statement.</strong> Given a list of integers (positive and negative), find the largest sum of any non-empty contiguous subarray using divide and conquer.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[-2, 1, -3, 4, -1, 2, 1, -5, 4] -&gt; 6
+[5, 4, -1, 7, 8] -&gt; 23
+[-8, -3, -6, -2, -5] -&gt; -2
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> All negative (answer is the largest single element); single element; all positive; zeros; empty list (error).</p>
+<p><strong>Hints.</strong>
+- The best subarray lies entirely in the left half, entirely in the right half, or crosses the middle.
+- For the crossing case grow outward from the middle in each direction and remember the best running sum.
+- Return the largest of the three values.</p>
+<h3>Problem 7 - k-th Smallest with Quickselect (<code>07_quickselect_kth_smallest.py</code>)</h3>
+<p><strong>Statement.</strong> Find the k-th smallest element (1-based) of an unsorted list without sorting the whole list.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[7, 10, 4, 3, 20, 15]
+k=1 -&gt; 3
+k=3 -&gt; 7
+k=6 -&gt; 20
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> <code>k</code> out of range (raise <code>ValueError</code>); duplicates; single element; already sorted input; <code>k = 1</code> and <code>k = n</code>.</p>
+<p><strong>Hints.</strong>
+- Partition around a pivot and look at where the pivot lands.
+- If its position is the wanted rank you are done; otherwise recurse into the side that contains the rank.
+- Rank numbers shift when you go to the right side; keep track of them carefully.</p>
+<h3>Problem 8 - Karatsuba Multiplication (<code>08_karatsuba_multiplication.py</code>)</h3>
+<p><strong>Statement.</strong> Multiply two non-negative integers using Karatsuba's method, which needs only three recursive multiplications of half-sized numbers instead of four.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">1234 * 5678 = 7006652
+12 * 34 = 408
+99999 * 99999 = 9999800001
+0 * 777 = 0
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Zero operands; single-digit operands (use direct multiplication as base case); different lengths; powers of ten; very large numbers.</p>
+<p><strong>Hints.</strong>
+- Split both numbers at the same digit position into a high and a low part (x = a, b and y = c, d).
+- Compute <code>a*c</code> (high parts), <code>b*d</code> (low parts) and <code>(a+b)*(c+d)</code> (sum of the parts of each number) recursively.
+- The middle term is the third product minus the first two; recombine with powers of ten.</p>
+<h3>Problem 9 - Closest Pair of Points (<code>09_closest_pair_of_points.py</code>)</h3>
+<p><strong>Statement.</strong> Given points in the plane, find the pair with the smallest Euclidean distance using divide and conquer rather than checking every pair.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[(2, 3), (12, 30), (40, 50), (5, 1), (12, 10), (3, 4)]
+closest pair: (2, 3) and (3, 4), distance = 1.4142
+duplicates (1, 1) and (1, 1): distance = 0.0
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Fewer than two points (error); duplicate points (distance 0); points with the same x; collinear points.</p>
+<p><strong>Hints.</strong>
+- Sort by x, split in the middle, find the best distance <code>d</code> in each half.
+- Only points within <code>d</code> of the dividing line can form a closer crossing pair.
+- Inside that strip order points by y; each point only needs comparing with a few following ones.</p>
+<h3>Problem 10 - Strassen Matrix Multiplication (<code>10_strassen_matrix_multiplication.py</code>)</h3>
+<p><strong>Statement.</strong> Multiply two <code>n x n</code> matrices (<code>n</code> a power of two) with Strassen's algorithm, which uses 7 recursive block multiplications instead of 8.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">A = [[1, 2], [3, 4]], B = [[5, 6], [7, 8]]
+result = [[19, 22], [43, 50]]
+Strassen matches classic multiplication on a 4 x 4 case
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> 1 x 1 matrices (base case); sizes that are not a power of two (rejected; padding with zeros is the usual fix); identity and zero matrices; negative entries.</p>
+<p><strong>Hints.</strong>
+- Split each matrix into four equal blocks.
+- Form seven products from sums and differences of blocks, then combine them with additions and subtractions.
+- Check your result against the ordinary triple-loop multiplication.</p>
+<hr />
+<h2>F. Installation Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python version</td>
+<td>Python 3.8 or newer</td>
+</tr>
+<tr>
+<td>Packages</td>
+<td>None. Standard library only</td>
+</tr>
+<tr>
+<td>Extra installation</td>
+<td>Nothing to install beyond Python itself</td>
+</tr>
+</tbody>
+</table>
+<p>Check your installation with <code>python --version</code> (see section G).</p>
+<hr />
+<h2>G. How to Run the Files</h2>
+<ol>
+<li>Open a terminal: <strong>Windows</strong> - press <code>Win + R</code>, type <code>cmd</code> (or open PowerShell / VS Code terminal). <strong>Linux/macOS</strong> - open Terminal.</li>
+<li>Verify Python:
+   <code>bash
+   python --version      # Windows (or: py --version)
+   python3 --version     # Linux / macOS</code></li>
+<li>Move into the topic folder and run a file.</li>
+</ol>
+<p><strong>Windows</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice\16-Divide-and-Conquer
+python 01_binary_search.py
+</code></pre>
+<p>If <code>python</code> is not recognised, use the Python launcher: <code>py 01_binary_search.py</code>.</p>
+<p><strong>Linux / macOS</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice/16-Divide-and-Conquer
+python3 01_binary_search.py
+</code></pre>
+<p>Every file is a standalone program: it needs no other file and no internet.</p>
+<hr />
+<h2>H. Revision Notes</h2>
+<p><strong>Key concepts</strong>
+- Divide, conquer, combine; always define the base case first.
+- Count the work with a recurrence; halving with constant work is <code>log n</code>, halving with linear work is <code>n log n</code>.
+- Some problems discard a half (binary search, peak, quickselect); others need a real combine step.
+- Reducing the number of sub-calls (Karatsuba 3, Strassen 7) lowers the exponent.
+- Recursion costs stack space equal to the depth.</p>
+<p><strong>Common mistakes</strong>
+- Missing or wrong base case (infinite recursion, or empty list crashes).
+- Overlapping halves or dropping the middle element when splitting.
+- Computing the midpoint wrongly or using <code>/</code> instead of integer division <code>//</code>.
+- Forgetting the crossing case in maximum subarray and closest pair.
+- Treating exactly <code>n/2</code> occurrences as a majority.
+- Using the built-in <code>max()</code>/<code>min()</code> in place of the algorithm being taught.</p>
+<p><strong>Interview tips</strong>
+- Write the recurrence aloud, then read off the complexity.
+- Say whether it is "throw half away" or "solve both halves" up front.
+- Mention that binary search is divide and conquer with no combine step.
+- For majority element, mention the <code>O(n)</code> Boyer-Moore alternative; for maximum subarray, mention Kadane's <code>O(n)</code> algorithm.
+- Always state recursion stack space as part of space complexity.</p>

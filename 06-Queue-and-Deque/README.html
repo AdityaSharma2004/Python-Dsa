@@ -1,0 +1,448 @@
+<h1>06 - Queue and Deque</h1>
+<p>Learn First-In-First-Out processing and the double-ended queue. Ten programs cover queues, deques, simulation with stacks and queues, sliding windows, scheduling and BFS in a grid.</p>
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#a-topic-introduction">A. Topic Introduction</a></li>
+<li><a href="#b-core-concepts">B. Core Concepts</a></li>
+<li><a href="#c-how-it-works">C. How It Works</a></li>
+<li><a href="#d-time-and-space-complexity">D. Time and Space Complexity</a></li>
+<li><a href="#e-problems-for-practice">E. Problems for Practice</a></li>
+<li><a href="#f-installation-requirements">F. Installation Requirements</a></li>
+<li><a href="#g-how-to-run-the-files">G. How to Run the Files</a></li>
+<li><a href="#h-revision-notes">H. Revision Notes</a></li>
+</ul>
+<hr />
+<h2>A. Topic Introduction</h2>
+<p><strong>What it is.</strong> A queue is First-In-First-Out (FIFO): items join at the back and leave from the front. A deque (double-ended queue, pronounced "deck") allows adding and removing at both ends.</p>
+<p><strong>Why it matters in DSA.</strong> Queues drive breadth-first search, scheduling and streaming problems. The deque is the tool for sliding-window problems and for O(1) work at both ends.</p>
+<p><strong>Where it is used.</strong> Print queues, job queues (Laravel queue workers), CPU scheduling, message brokers, level-order tree walks and shortest path in a grid.</p>
+<p><strong>Everyday analogy.</strong> People waiting at a ticket counter: the first to arrive is served first. A deque is a bus aisle where people can enter or leave at either door.</p>
+<p>If you know Laravel: <code>dispatch(new Job)</code> pushes to the back of a queue and a worker takes from the front - exactly FIFO.</p>
+<hr />
+<h2>B. Core Concepts</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Enqueue</td>
+<td>Add at the rear.</td>
+</tr>
+<tr>
+<td>Dequeue</td>
+<td>Remove from the front.</td>
+</tr>
+<tr>
+<td>Front / rear</td>
+<td>The next item to leave / the most recently added item.</td>
+</tr>
+<tr>
+<td>FIFO</td>
+<td>First in, first out.</td>
+</tr>
+<tr>
+<td><code>collections.deque</code></td>
+<td>Python's O(1) double-ended queue (<code>append</code>, <code>appendleft</code>, <code>pop</code>, <code>popleft</code>).</td>
+</tr>
+<tr>
+<td>Monotonic deque</td>
+<td>A deque kept in decreasing order to track window maximums.</td>
+</tr>
+<tr>
+<td>BFS</td>
+<td>Breadth-first search; explores level by level using a queue.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Queue picture</strong></p>
+<pre><code class="language-text">enqueue -&gt;  [ rear ] 40 30 20 10 [ front ]  -&gt; dequeue
+</code></pre>
+<p><strong>Deque picture</strong></p>
+<pre><code class="language-text">appendleft &lt;-&gt;  [ 1 | 2 | 3 | 4 ]  &lt;-&gt; append
+popleft    &lt;-&gt;                     &lt;-&gt; pop
+</code></pre>
+<pre><code class="language-mermaid">flowchart LR
+    IN[&quot;enqueue&quot;] --&gt; R[&quot;rear&quot;] --&gt; M[&quot;...&quot;] --&gt; F[&quot;front&quot;] --&gt; OUT[&quot;dequeue&quot;]
+</code></pre>
+<p><strong>Warning.</strong> <code>list.pop(0)</code> is O(n) because every element shifts. Use <code>deque.popleft()</code> (O(1)) for queues.</p>
+<hr />
+<h2>C. How It Works</h2>
+<p><strong>Dry run 1: queue with a linked list (head = front, tail = rear)</strong></p>
+<pre><code class="language-text">enqueue(10): head=tail=[10]
+enqueue(20): [10] -&gt; [20]          tail moves
+dequeue()  : returns 10, head=[20]
+dequeue()  : returns 20, head=None -&gt; also set tail=None
+</code></pre>
+<p>Forgetting to reset the tail when the queue empties is a classic bug.</p>
+<p><strong>Dry run 2: queue from two stacks</strong></p>
+<pre><code class="language-text">enqueue 1,2,3 -&gt; in=[1,2,3] out=[]
+dequeue       -&gt; out is empty, so move everything: in=[] out=[3,2,1]
+                 pop from out -&gt; returns 1, out=[3,2]
+</code></pre>
+<p>Only refill <code>out</code> when it is empty; then the order stays correct. Each element moves at most twice, so dequeue is O(1) amortised.</p>
+<p><strong>Dry run 3: binary numbers 1..5 with a queue</strong></p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Dequeue</th>
+<th>Output</th>
+<th>Enqueue (add 0, add 1)</th>
+<th>Queue after</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>"1"</td>
+<td>1</td>
+<td>"10", "11"</td>
+<td>10, 11</td>
+</tr>
+<tr>
+<td>2</td>
+<td>"10"</td>
+<td>10</td>
+<td>"100", "101"</td>
+<td>11, 100, 101</td>
+</tr>
+<tr>
+<td>3</td>
+<td>"11"</td>
+<td>11</td>
+<td>"110", "111"</td>
+<td>100, 101, 110, 111</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Dry run 4: sliding window maximum for <code>[1, 3, -1, -3, 5]</code>, k = 3</strong></p>
+<pre><code class="language-text">deque holds indices whose values are in decreasing order
+i=0: [0]          i=1: 3 removes 1 -&gt; [1]
+i=2: [1,2] -&gt; window full, max = a[1] = 3
+i=3: [1,2,3] -&gt; max 3
+i=4: 5 removes all smaller, index 1 leaves the window -&gt; [4], max 5
+</code></pre>
+<p><strong>Dry run 5: BFS on a grid.</strong> Put the start in the queue; repeatedly take a cell, add its unvisited open neighbours with distance + 1. The first time you reach the goal is the shortest path.</p>
+<hr />
+<h2>D. Time and Space Complexity</h2>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Time</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>enqueue / dequeue (linked list or deque)</td>
+<td>O(1)</td>
+<td></td>
+</tr>
+<tr>
+<td><code>list.pop(0)</code></td>
+<td>O(n)</td>
+<td>avoid for queues</td>
+</tr>
+<tr>
+<td>Queue from two stacks, dequeue</td>
+<td>O(1) amortised</td>
+<td>worst single call O(n)</td>
+</tr>
+<tr>
+<td>Stack from queues</td>
+<td>push O(n) or pop O(n)</td>
+<td>one of the two is costly</td>
+</tr>
+<tr>
+<td>Sliding window maximum</td>
+<td>O(n)</td>
+<td>each index enters and leaves once; O(k) space</td>
+</tr>
+<tr>
+<td>First non-repeating in a stream</td>
+<td>O(1) amortised per char</td>
+<td>O(alphabet) space</td>
+</tr>
+<tr>
+<td>Round robin</td>
+<td>O(total burst time / quantum) steps</td>
+<td></td>
+</tr>
+<tr>
+<td>BFS in grid R x C</td>
+<td>O(R * C)</td>
+<td>O(R * C) space</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>E. Problems for Practice</h2>
+<table>
+<thead>
+<tr>
+<th>No</th>
+<th>Title</th>
+<th>Difficulty</th>
+<th>Concept</th>
+<th>Python File</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Queue Implementation</td>
+<td>Easy</td>
+<td>FIFO class, front/rear</td>
+<td><code>01_queue_implementation.py</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Deque Basics</td>
+<td>Easy</td>
+<td>collections.deque, rotate, maxlen</td>
+<td><code>02_deque_basics.py</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Palindrome Check with a Deque</td>
+<td>Easy</td>
+<td>Take from both ends</td>
+<td><code>03_palindrome_check_with_deque.py</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Queue Using Two Stacks</td>
+<td>Medium</td>
+<td>Amortised transfer between stacks</td>
+<td><code>04_queue_using_two_stacks.py</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Generate Binary Numbers 1 to N</td>
+<td>Medium</td>
+<td>Queue as a generator</td>
+<td><code>05_generate_binary_numbers.py</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Sliding Window Maximum</td>
+<td>Medium</td>
+<td>Monotonic deque</td>
+<td><code>06_sliding_window_maximum.py</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>First Non-Repeating Character in a Stream</td>
+<td>Medium</td>
+<td>Queue plus frequency table</td>
+<td><code>07_first_non_repeating_in_stream.py</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>Stack Using Queues</td>
+<td>Medium</td>
+<td>Rotating a queue to get LIFO</td>
+<td><code>08_stack_using_queues.py</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>Round Robin CPU Scheduler</td>
+<td>Medium</td>
+<td>Queue simulation, time slices</td>
+<td><code>09_round_robin_scheduler.py</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>BFS Shortest Path in a Grid</td>
+<td>Medium</td>
+<td>BFS, visited set, path reconstruction</td>
+<td><code>10_bfs_shortest_path_in_grid.py</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Problem 1 - Queue Implementation (<code>01_queue_implementation.py</code>)</h3>
+<p><strong>Statement.</strong> Build a queue with <code>enqueue</code>, <code>dequeue</code>, <code>front</code>, <code>rear</code>, <code>is_empty</code> and <code>size</code>. Enqueue and dequeue must both be O(1).</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">enqueue 10, 20, 30 -&gt; front=10 rear=30 size=3
+dequeue -&gt; 10, dequeue -&gt; 20
+dequeue on empty -&gt; Queue is empty
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Dequeue or front on an empty queue; dequeuing the last item (reset the tail); enqueue after the queue became empty.</p>
+<p><strong>Hints.</strong>
+- A linked list with head and tail pointers gives O(1) at both ends.
+- Enqueue at the tail, dequeue at the head.
+- When head becomes <code>None</code>, tail must become <code>None</code> too.</p>
+<h3>Problem 2 - Deque Basics (<code>02_deque_basics.py</code>)</h3>
+<p><strong>Statement.</strong> Demonstrate <code>collections.deque</code>: use it as a queue, add and remove at both ends, rotate it, use <code>maxlen</code>, and compare removing from the front of a deque and of a list.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">deque([1, 2, 3]) popleft -&gt; 1
+appendleft(0) -&gt; deque([0, 2, 3])
+rotate(1) -&gt; deque([8, 0, 2, 7])
+maxlen=3 after 1..5 -&gt; deque([3, 4, 5])
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> <code>popleft</code> or <code>pop</code> on an empty deque raises <code>IndexError</code>; <code>maxlen=0</code>; rotating by more than the length wraps around.</p>
+<p><strong>Hints.</strong>
+- Know the four end operations and which side each uses.
+- Positive <code>rotate</code> moves items to the right.
+- A <code>maxlen</code> deque silently drops items from the opposite end.</p>
+<h3>Problem 3 - Palindrome Check with a Deque (<code>03_palindrome_check_with_deque.py</code>)</h3>
+<p><strong>Statement.</strong> Decide whether a string is a palindrome, ignoring case, spaces and punctuation, by comparing characters taken from both ends of a deque.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">&quot;A man, a plan, a canal: Panama&quot; -&gt; palindrome
+&quot;hello&quot; -&gt; not a palindrome
+&quot;&quot; -&gt; palindrome
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty string; single character; odd and even length; mixed case; only punctuation.</p>
+<p><strong>Hints.</strong>
+- Load only letters and digits, lower-cased, into the deque.
+- Compare <code>popleft</code> with <code>pop</code> while at least two items remain.
+- Zero or one remaining item means success.</p>
+<h3>Problem 4 - Queue Using Two Stacks (<code>04_queue_using_two_stacks.py</code>)</h3>
+<p><strong>Statement.</strong> Build a FIFO queue using only two LIFO stacks (lists with <code>append</code> and <code>pop</code>). Support <code>enqueue</code>, <code>dequeue</code> and <code>peek</code>.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">enqueue 1,2,3; dequeue -&gt; 1; enqueue 4; dequeue -&gt; 2, 3, 4
+dequeue on empty -&gt; Queue is empty
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Dequeue on empty; interleaved enqueue and dequeue (do not transfer while the output stack still has items); single element.</p>
+<p><strong>Hints.</strong>
+- Use an input stack for enqueue and an output stack for dequeue.
+- Transfer only when the output stack is empty.
+- Transferring reverses the order, which is exactly what FIFO needs.</p>
+<h3>Problem 5 - Generate Binary Numbers 1 to N (<code>05_generate_binary_numbers.py</code>)</h3>
+<p><strong>Statement.</strong> Print the binary form of every number from 1 to N using a queue and no number-to-binary conversion function.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">n = 10 -&gt; ['1', '10', '11', '100', '101', '110', '111', '1000', '1001', '1010']
+n = 0 -&gt; []
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> n = 0; n = 1; powers of two; large n (the queue holds about n/2 entries).</p>
+<p><strong>Hints.</strong>
+- Start with "1" in the queue.
+- Dequeue a string, output it, enqueue it with "0" appended then with "1" appended.
+- Stop after N outputs.</p>
+<h3>Problem 6 - Sliding Window Maximum (<code>06_sliding_window_maximum.py</code>)</h3>
+<p><strong>Statement.</strong> Given an array and a window size k, report the maximum of every window of k consecutive elements as it slides left to right.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[1, 3, -1, -3, 5, 3, 6, 7], k = 3 -&gt; [3, 3, 5, 5, 6, 7]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> k = 1; k equal to the length; k larger than the length; empty array; duplicates; monotonic arrays.</p>
+<p><strong>Hints.</strong>
+- Store indices in a deque with decreasing values.
+- Remove smaller values from the back when a new one arrives.
+- Remove the front index when it leaves the window; the front is the maximum.</p>
+<h3>Problem 7 - First Non-Repeating Character in a Stream (<code>07_first_non_repeating_in_stream.py</code>)</h3>
+<p><strong>Statement.</strong> Characters arrive one at a time. After each arrival report the first character seen so far that appeared exactly once, or <code>#</code> if none.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">stream 'aabcbd' -&gt; a # b b c c
+stream 'aabb' -&gt; a # b #
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty stream; all characters repeated; a unique character that repeats later; three or more repeats.</p>
+<p><strong>Hints.</strong>
+- Keep counts in a dictionary.
+- Keep candidates in a queue in arrival order.
+- Pop from the front while the front's count is greater than 1.</p>
+<h3>Problem 8 - Stack Using Queues (<code>08_stack_using_queues.py</code>)</h3>
+<p><strong>Statement.</strong> Build a LIFO stack using only queue operations (enqueue at back, dequeue from front, size, is-empty). Support <code>push</code>, <code>pop</code> and <code>top</code>.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">push 1, 2, 3 -&gt; top=3
+pop -&gt; 3, push 4, pop -&gt; 4, 2, 1
+pop on empty -&gt; Stack is empty
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Pop or top on an empty stack; single element (no rotation needed); push after the stack became empty.</p>
+<p><strong>Hints.</strong>
+- After adding a new item, rotate the older items behind it.
+- Rotate by dequeuing and re-enqueuing <code>size - 1</code> times.
+- Then the front of the queue is always the stack top.</p>
+<h3>Problem 9 - Round Robin CPU Scheduler (<code>09_round_robin_scheduler.py</code>)</h3>
+<p><strong>Statement.</strong> Processes have burst times and arrive together. The scheduler gives each at most <code>quantum</code> units in turn; unfinished processes go to the back. Report finish, turnaround and waiting times.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">P1=5, P2=3, P3=1, quantum = 2
+Finish times: P1=9, P2=8, P3=5
+Average waiting time: 4.33
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Quantum larger than all bursts (becomes first-come-first-served); quantum 1; single process; bursts that are exact multiples of the quantum; empty process list.</p>
+<p><strong>Hints.</strong>
+- Queue holds (name, remaining time) pairs.
+- Run for <code>min(quantum, remaining)</code>, advance the clock.
+- If time remains, re-enqueue; otherwise record finish time. Waiting = turnaround - burst.</p>
+<h3>Problem 10 - BFS Shortest Path in a Grid (<code>10_bfs_shortest_path_in_grid.py</code>)</h3>
+<p><strong>Statement.</strong> A grid has open cells (0) and walls (1). Find the length of the shortest path from the top-left to the bottom-right moving up, down, left or right, and print one such path. Return -1 if none exists.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">0 0 0 / 1 1 0 / 0 0 0
+shortest path has 4 moves
+path: (0,0) (0,1) (0,2) (1,2) (2,2)
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Start equals goal (1x1 grid); blocked start or goal; no route; empty grid; long winding corridors.</p>
+<p><strong>Hints.</strong>
+- Queue stores cells (and their distance).
+- Mark cells visited when you enqueue them, not when you dequeue them.
+- Remember each cell's parent to rebuild the path.</p>
+<hr />
+<h2>F. Installation Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python version</td>
+<td>Python 3.8 or newer</td>
+</tr>
+<tr>
+<td>Packages</td>
+<td>None. Standard library only</td>
+</tr>
+<tr>
+<td>Extra installation</td>
+<td>Nothing to install beyond Python itself</td>
+</tr>
+</tbody>
+</table>
+<p>Check your installation with <code>python --version</code> (see section G).</p>
+<hr />
+<h2>G. How to Run the Files</h2>
+<ol>
+<li>Open a terminal: <strong>Windows</strong> - press <code>Win + R</code>, type <code>cmd</code> (or open PowerShell / VS Code terminal). <strong>Linux/macOS</strong> - open Terminal.</li>
+<li>Verify Python:
+   <code>bash
+   python --version      # Windows (or: py --version)
+   python3 --version     # Linux / macOS</code></li>
+<li>Move into the topic folder and run a file.</li>
+</ol>
+<p><strong>Windows</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice\06-Queue-and-Deque
+python 01_queue_implementation.py
+</code></pre>
+<p>If <code>python</code> is not recognised, use the Python launcher: <code>py 01_queue_implementation.py</code>.</p>
+<p><strong>Linux / macOS</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice/06-Queue-and-Deque
+python3 01_queue_implementation.py
+</code></pre>
+<p>Every file is a standalone program: it needs no other file and no internet.</p>
+<hr />
+<h2>H. Revision Notes</h2>
+<p><strong>Key concepts</strong>
+- FIFO: the oldest item leaves first.
+- <code>collections.deque</code> gives O(1) at both ends; <code>list.pop(0)</code> is O(n).
+- A monotonic deque tracks window extremes in O(n).
+- BFS uses a queue and finds the shortest path in an unweighted graph or grid.
+- Stacks and queues can imitate each other using two structures or rotation.</p>
+<p><strong>Common mistakes</strong>
+- Using <code>list.pop(0)</code> for a large queue.
+- Forgetting to reset <code>tail</code> when the queue empties.
+- Marking cells visited on dequeue in BFS (causes duplicates and slowness).
+- Moving items between the two stacks while the output stack is not empty.
+- Not removing out-of-window indices in the sliding window.</p>
+<p><strong>Interview tips</strong>
+- Say "BFS, because every edge has the same cost."
+- Know the amortised argument for the two-stack queue.
+- Mention that <code>deque</code> is implemented as blocks, hence O(1) ends but O(n) middle access.
+- Clarify tie-breaking and arrival times in scheduling questions.
+- Test with k = 1 and k = n in window problems.</p>

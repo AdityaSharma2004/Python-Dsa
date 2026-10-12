@@ -1,0 +1,463 @@
+<h1>08 - Recursion</h1>
+<p>Learn to solve a problem by solving a smaller copy of it. Ten programs cover factorial, Fibonacci, digits, strings, searching, arrays, powers, Tower of Hanoi and backtracking.</p>
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#a-topic-introduction">A. Topic Introduction</a></li>
+<li><a href="#b-core-concepts">B. Core Concepts</a></li>
+<li><a href="#c-how-it-works">C. How It Works</a></li>
+<li><a href="#d-time-and-space-complexity">D. Time and Space Complexity</a></li>
+<li><a href="#e-problems-for-practice">E. Problems for Practice</a></li>
+<li><a href="#f-installation-requirements">F. Installation Requirements</a></li>
+<li><a href="#g-how-to-run-the-files">G. How to Run the Files</a></li>
+<li><a href="#h-revision-notes">H. Revision Notes</a></li>
+</ul>
+<hr />
+<h2>A. Topic Introduction</h2>
+<p><strong>What it is.</strong> Recursion means a function solves a problem by calling itself on a smaller version of the same problem, until it reaches a case so small that the answer is obvious (the base case).</p>
+<p><strong>Why it matters in DSA.</strong> Trees, graphs, divide-and-conquer, dynamic programming and backtracking are all recursive in nature. Learning to trust the recursive "leap of faith" is a core skill.</p>
+<p><strong>Where it is used.</strong> Directory walking, JSON/tree processing, parsing, sorting (merge sort, quick sort), searching (binary search), puzzles (Hanoi) and generating combinations.</p>
+<p><strong>Everyday analogy.</strong> Russian nesting dolls: to find the smallest doll, open the current doll and repeat on the one inside. When you can't open any more, you have reached the base case.</p>
+<p>If you know PHP/Laravel: walking a nested menu or category tree (<code>children</code> inside <code>children</code>) with a function that calls itself on each child is recursion.</p>
+<hr />
+<h2>B. Core Concepts</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Base case</td>
+<td>Input so small that the answer is returned directly. Stops the recursion.</td>
+</tr>
+<tr>
+<td>Recursive case</td>
+<td>The function calls itself with a smaller input.</td>
+</tr>
+<tr>
+<td>Call stack</td>
+<td>Memory that holds each pending call; depth = how many are waiting.</td>
+</tr>
+<tr>
+<td>Stack overflow</td>
+<td>Too many nested calls (Python's default limit is about 1000: <code>RecursionError</code>).</td>
+</tr>
+<tr>
+<td>Memoization</td>
+<td>Caching results so repeated sub-problems are solved once.</td>
+</tr>
+<tr>
+<td>Backtracking</td>
+<td>Try a choice, recurse, undo the choice, try the next.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Two questions to ask</strong>
+1. What is the simplest input and its answer? (base case)
+2. If I magically had the answer for a smaller input, how do I build my answer? (recursive step)</p>
+<p><strong>Template</strong></p>
+<pre><code class="language-text">def solve(problem):
+    if problem is smallest:      # base case
+        return known answer
+    smaller = shrink(problem)
+    return combine(solve(smaller))
+</code></pre>
+<pre><code class="language-mermaid">flowchart TB
+    A[&quot;factorial(3)&quot;] --&gt; B[&quot;3 * factorial(2)&quot;] --&gt; C[&quot;2 * factorial(1)&quot;] --&gt; D[&quot;base case: 1&quot;]
+</code></pre>
+<hr />
+<h2>C. How It Works</h2>
+<p><strong>Dry run 1: <code>factorial(4)</code></strong></p>
+<pre><code class="language-text">factorial(4) -&gt; 4 * factorial(3)
+                    factorial(3) -&gt; 3 * factorial(2)
+                                       factorial(2) -&gt; 2 * factorial(1)
+                                                          factorial(1) -&gt; 1   (base)
+unwinding: 2*1 = 2,  3*2 = 6,  4*6 = 24
+</code></pre>
+<p><strong>Dry run 2: sum of digits of 9875</strong></p>
+<table>
+<thead>
+<tr>
+<th>Call</th>
+<th>Last digit</th>
+<th>Rest</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>f(9875)</td>
+<td>5</td>
+<td>987</td>
+<td>5 + f(987)</td>
+</tr>
+<tr>
+<td>f(987)</td>
+<td>7</td>
+<td>98</td>
+<td>7 + f(98)</td>
+</tr>
+<tr>
+<td>f(98)</td>
+<td>8</td>
+<td>9</td>
+<td>8 + f(9)</td>
+</tr>
+<tr>
+<td>f(9)</td>
+<td>9</td>
+<td>0</td>
+<td>9 + f(0) = 9 + 0</td>
+</tr>
+<tr>
+<td>total</td>
+<td></td>
+<td></td>
+<td>9 + 8 + 7 + 5 = 29</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Dry run 3: fast power <code>2^10</code></strong></p>
+<pre><code class="language-text">2^10 = (2^5)^2,  2^5 = 2 * (2^2)^2,  2^2 = (2^1)^2,  2^1 = 2 * (2^0)^2,  2^0 = 1
+Only about log2(10) levels instead of 10 multiplications.
+</code></pre>
+<p><strong>Dry run 4: Tower of Hanoi for 3 disks (A to C using B)</strong></p>
+<pre><code class="language-text">move 2 disks A -&gt; B   (using C)     = 3 moves
+move disk 3   A -&gt; C                = 1 move
+move 2 disks B -&gt; C   (using A)     = 3 moves
+total 7 = 2^3 - 1
+</code></pre>
+<p><strong>Dry run 5: backtracking subsets of <code>[1, 2]</code></strong></p>
+<pre><code class="language-text">choose 1? -&gt; include -&gt; choose 2? -&gt; include -&gt; [1, 2]
+                                    -&gt; exclude -&gt; [1]
+          -&gt; exclude -&gt; choose 2? -&gt; include -&gt; [2]
+                                    -&gt; exclude -&gt; []
+</code></pre>
+<hr />
+<h2>D. Time and Space Complexity</h2>
+<table>
+<thead>
+<tr>
+<th>Problem</th>
+<th>Time</th>
+<th>Space (stack)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Factorial, sum of digits, reverse, palindrome</td>
+<td>O(n)</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>Naive Fibonacci</td>
+<td>O(2^n)</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>Memoized Fibonacci</td>
+<td>O(n)</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>Recursive binary search</td>
+<td>O(log n)</td>
+<td>O(log n)</td>
+</tr>
+<tr>
+<td>Simple power x^n</td>
+<td>O(n)</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>Fast power x^n</td>
+<td>O(log n)</td>
+<td>O(log n)</td>
+</tr>
+<tr>
+<td>Tower of Hanoi</td>
+<td>O(2^n)</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>Subsets</td>
+<td>O(n * 2^n)</td>
+<td>O(n) depth</td>
+</tr>
+<tr>
+<td>Permutations</td>
+<td>O(n * n!)</td>
+<td>O(n) depth</td>
+</tr>
+</tbody>
+</table>
+<p>Rule of thumb: time = (number of calls) x (work per call); space = maximum depth of the call stack (plus any stored results).</p>
+<hr />
+<h2>E. Problems for Practice</h2>
+<table>
+<thead>
+<tr>
+<th>No</th>
+<th>Title</th>
+<th>Difficulty</th>
+<th>Concept</th>
+<th>Python File</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Factorial Using Recursion</td>
+<td>Easy</td>
+<td>Base case and recursive case</td>
+<td><code>01_factorial.py</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Fibonacci Numbers (Naive vs Memoized)</td>
+<td>Easy</td>
+<td>Overlapping sub-problems, caching</td>
+<td><code>02_fibonacci.py</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Sum of Digits and Digital Root</td>
+<td>Easy</td>
+<td>Shrinking by integer division</td>
+<td><code>03_sum_of_digits.py</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Reverse a String Recursively</td>
+<td>Easy</td>
+<td>Recursion on strings, two pointers</td>
+<td><code>04_reverse_string.py</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Palindrome Check Using Recursion</td>
+<td>Easy</td>
+<td>Comparing ends, cleaning input</td>
+<td><code>05_palindrome_check.py</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Recursive Binary Search</td>
+<td>Medium</td>
+<td>Divide and conquer, O(log n)</td>
+<td><code>06_binary_search_recursive.py</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Recursive Array Operations</td>
+<td>Medium</td>
+<td>Index-based recursion</td>
+<td><code>07_recursive_array_operations.py</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>Power Function x^n (Linear vs Fast)</td>
+<td>Medium</td>
+<td>Halving the exponent</td>
+<td><code>08_power_function.py</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>Tower of Hanoi</td>
+<td>Medium</td>
+<td>Recursive decomposition</td>
+<td><code>09_tower_of_hanoi.py</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>Backtracking: Subsets and Permutations</td>
+<td>Medium</td>
+<td>Choose, explore, un-choose</td>
+<td><code>10_backtracking_subsets_permutations.py</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Problem 1 - Factorial Using Recursion (<code>01_factorial.py</code>)</h3>
+<p><strong>Statement.</strong> Given a non-negative integer n, compute n! = n * (n-1) * ... * 1 using recursion. By definition 0! = 1. Include a call trace.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">n = 5 -&gt; 120
+0! = 1, 10! = 3628800
+negative n -&gt; error
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> n = 0 and n = 1 return 1; negative n is invalid (<code>ValueError</code>); very large n hits Python's recursion limit.</p>
+<p><strong>Hints.</strong>
+- The base case is <code>n</code> of 0 or 1.
+- <code>n! = n * (n - 1)!</code>.
+- Validate input before recursing.</p>
+<h3>Problem 2 - Fibonacci Numbers (Naive vs Memoized) (<code>02_fibonacci.py</code>)</h3>
+<p><strong>Statement.</strong> Return the n-th Fibonacci number with F(0) = 0, F(1) = 1 and F(n) = F(n-1) + F(n-2). Compare naive recursion, memoized recursion and a loop by call counts.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">n = 10: value 55, naive 177 calls, memo 19 calls
+n = 20: naive 21891 calls, memo 39 calls
+fib(50) with memo = 12586269025
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> n = 0; n = 1; negative n (<code>ValueError</code>); the naive version is very slow for large n.</p>
+<p><strong>Hints.</strong>
+- Naive: add the results of the two previous calls.
+- Memo: check a dictionary first and store each answer before returning.
+- Loop: keep only the last two values.</p>
+<h3>Problem 3 - Sum of Digits and Digital Root (<code>03_sum_of_digits.py</code>)</h3>
+<p><strong>Statement.</strong> Return the sum of the digits of a non-negative integer with recursion, then repeat until a single digit remains (digital root).</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">9875 -&gt; sum 29, root 2
+123456789 -&gt; sum 45, root 9
+negative -&gt; error
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> n = 0; single digit; numbers with zeros such as 1001; negative input.</p>
+<p><strong>Hints.</strong>
+- The last digit is <code>n % 10</code>; the rest is <code>n // 10</code>.
+- Base case: a number below 10 (or 0).
+- Digital root: apply the digit sum again until the result is below 10.</p>
+<h3>Problem 4 - Reverse a String Recursively (<code>04_reverse_string.py</code>)</h3>
+<p><strong>Statement.</strong> Reverse a string without <code>text[::-1]</code> or <code>reversed()</code> using recursion, and also with an in-place two-pointer version on a list of characters.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">'recursion' -&gt; 'noisrucer'
+'hello world' -&gt; 'dlrow olleh'
+'' -&gt; ''
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty string; single character; spaces; even and odd lengths.</p>
+<p><strong>Hints.</strong>
+- Reverse of a string = reverse of everything after the first character, followed by the first character.
+- Base case: length 0 or 1.
+- Two-pointer version: swap the ends and move inward until they meet.</p>
+<h3>Problem 5 - Palindrome Check Using Recursion (<code>05_palindrome_check.py</code>)</h3>
+<p><strong>Statement.</strong> Check whether a string reads the same forwards and backwards, ignoring case, spaces and punctuation (only letters and digits count).</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">'A man, a plan, a canal: Panama' -&gt; True
+'hello' -&gt; False
+'' -&gt; True
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty string is a palindrome; single character; only punctuation; mixed case.</p>
+<p><strong>Hints.</strong>
+- Clean the text first (keep letters and digits, lower-case).
+- Compare the first and last characters, then recurse on the middle.
+- Base case: length 0 or 1 is <code>True</code>.</p>
+<h3>Problem 6 - Recursive Binary Search (<code>06_binary_search_recursive.py</code>)</h3>
+<p><strong>Statement.</strong> Given a sorted list and a target, return the index of the target or -1 using recursion.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[2, 5, 8, 12, 16, 23, 38, 56, 72, 91], target 23 -&gt; index 5
+target 50 -&gt; -1
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list; one element; target smaller or larger than everything; duplicates (any matching index).</p>
+<p><strong>Hints.</strong>
+- Pass <code>low</code> and <code>high</code> bounds instead of slicing the list.
+- Base case: <code>low &gt; high</code> means not found.
+- Compare with the middle and recurse into one half.</p>
+<h3>Problem 7 - Recursive Array Operations (<code>07_recursive_array_operations.py</code>)</h3>
+<p><strong>Statement.</strong> Without loops write recursive functions that compute the sum, the maximum, a count of a value, and an in-place reversal of a list.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[3, 8, 2, 8, 5] -&gt; sum 26, max 8, count of 8 = 2, reversed [5, 8, 2, 8, 3]
+max of empty list -&gt; error
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list (sum 0, count 0, maximum is an error); single element; all equal; negative numbers.</p>
+<p><strong>Hints.</strong>
+- Pass an index so you do not copy the list.
+- Sum: element + sum of the rest; max: larger of element and max of the rest.
+- Reverse: swap the two ends and recurse inward.</p>
+<h3>Problem 8 - Power Function x^n (Linear vs Fast) (<code>08_power_function.py</code>)</h3>
+<p><strong>Statement.</strong> Compute x to the integer power n using recursion, without <code>**</code> or <code>pow()</code>. Support negative n. Compare a simple and a fast version.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">2^10 simple: 11 calls, fast: 5 calls
+2^-3 = 0.125
+0 with negative power -&gt; error
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> n = 0 gives 1; n = 1; negative n; x = 0 with negative n is an error; negative x.</p>
+<p><strong>Hints.</strong>
+- Simple: <code>x * power(x, n - 1)</code>.
+- Fast: compute half = power(x, n // 2) once and square it; multiply by x if n is odd.
+- For negative n compute with the positive exponent and take the reciprocal.</p>
+<h3>Problem 9 - Tower of Hanoi (<code>09_tower_of_hanoi.py</code>)</h3>
+<p><strong>Statement.</strong> Move n disks from peg A to peg C using peg B, one disk at a time, never putting a larger disk on a smaller one. Print the moves and count them.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">n = 3 -&gt; 7 moves, first move: disk 1 from A to C
+n = 5 -&gt; 31 moves
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> n = 0 means no moves; n = 1 is a single move; moves grow as 2^n - 1.</p>
+<p><strong>Hints.</strong>
+- Move n-1 disks to the spare peg, move the biggest disk, move n-1 disks on top of it.
+- The roles of source, helper and target change on every call.
+- Total moves satisfy <code>T(n) = 2T(n-1) + 1</code>.</p>
+<h3>Problem 10 - Backtracking: Subsets and Permutations (<code>10_backtracking_subsets_permutations.py</code>)</h3>
+<p><strong>Statement.</strong> Given a list of distinct items, generate all subsets and all permutations using recursive backtracking.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[1, 2, 3] -&gt; 8 subsets, 6 permutations
+empty input -&gt; [[]] for both
+4 items -&gt; 16 subsets, 24 permutations
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty input returns <code>[[]]</code>; single item; duplicate items would repeat results (distinct items are assumed).</p>
+<p><strong>Hints.</strong>
+- Keep a current path list and add a copy of it to the results.
+- Subsets: for each item decide to include or exclude it.
+- Permutations: choose an unused item, recurse, then remove it again (undo).</p>
+<hr />
+<h2>F. Installation Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python version</td>
+<td>Python 3.8 or newer</td>
+</tr>
+<tr>
+<td>Packages</td>
+<td>None. Standard library only</td>
+</tr>
+<tr>
+<td>Extra installation</td>
+<td>Nothing to install beyond Python itself</td>
+</tr>
+</tbody>
+</table>
+<p>Check your installation with <code>python --version</code> (see section G).</p>
+<hr />
+<h2>G. How to Run the Files</h2>
+<ol>
+<li>Open a terminal: <strong>Windows</strong> - press <code>Win + R</code>, type <code>cmd</code> (or open PowerShell / VS Code terminal). <strong>Linux/macOS</strong> - open Terminal.</li>
+<li>Verify Python:
+   <code>bash
+   python --version      # Windows (or: py --version)
+   python3 --version     # Linux / macOS</code></li>
+<li>Move into the topic folder and run a file.</li>
+</ol>
+<p><strong>Windows</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice\08-Recursion
+python 01_factorial.py
+</code></pre>
+<p>If <code>python</code> is not recognised, use the Python launcher: <code>py 01_factorial.py</code>.</p>
+<p><strong>Linux / macOS</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice/08-Recursion
+python3 01_factorial.py
+</code></pre>
+<p>Every file is a standalone program: it needs no other file and no internet.</p>
+<hr />
+<h2>H. Revision Notes</h2>
+<p><strong>Key concepts</strong>
+- Every recursion needs a base case and progress toward it.
+- The call stack stores pending calls; depth costs O(depth) memory.
+- Overlapping sub-problems (Fibonacci) call for memoization.
+- Halving the problem gives <code>O(log n)</code> (binary search, fast power).
+- Backtracking = choose, explore, undo.</p>
+<p><strong>Common mistakes</strong>
+- Missing or wrong base case causing <code>RecursionError</code>.
+- Not shrinking the input (infinite recursion).
+- Slicing lists/strings in every call, which hides O(n) copying.
+- Forgetting to undo a choice in backtracking, or storing the path without copying it.
+- Using naive recursion where memoization is required.</p>
+<p><strong>Interview tips</strong>
+- Say the base case first, then the recursive relation.
+- State time and space, including the call stack.
+- Mention Python's recursion limit and how to convert to a loop or explicit stack.
+- Draw the call tree for 3-4 inputs to spot repeated work.
+- Know that tail recursion is not optimised in Python.</p>

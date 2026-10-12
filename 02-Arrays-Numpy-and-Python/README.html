@@ -1,0 +1,483 @@
+<h1>02 - Arrays with Python and NumPy</h1>
+<p>Master arrays: traversal, insertion, deletion, searching, reversing, rotating, duplicates, merging, 2D arrays, and then the same ideas with NumPy. Files 01-07 use plain Python lists only; files 08-10 (the NumPy files) need NumPy.</p>
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#a-topic-introduction">A. Topic Introduction</a></li>
+<li><a href="#b-core-concepts">B. Core Concepts</a></li>
+<li><a href="#c-how-it-works">C. How It Works</a></li>
+<li><a href="#d-time-and-space-complexity">D. Time and Space Complexity</a></li>
+<li><a href="#e-problems-for-practice">E. Problems for Practice</a></li>
+<li><a href="#f-installation-requirements">F. Installation Requirements</a></li>
+<li><a href="#g-how-to-run-the-files">G. How to Run the Files</a></li>
+<li><a href="#h-revision-notes">H. Revision Notes</a></li>
+</ul>
+<hr />
+<h2>A. Topic Introduction</h2>
+<p><strong>What it is.</strong> An array is a collection of items stored one after another in memory and reached by a numeric index. In Python the everyday array is the <code>list</code>. NumPy adds a true fixed-type array (<code>ndarray</code>) built for fast numeric work.</p>
+<p><strong>Why it matters in DSA.</strong> Arrays are the most common data structure. Most other structures (stacks, queues, heaps, hash tables) are built on top of them, and a large share of interview questions are array questions: two pointers, searching, sliding windows, rotations.</p>
+<p><strong>Where it is used.</strong> Rows returned from a database query, CSV data, image pixels, game boards, spreadsheet grids, machine learning data, sales figures and reports.</p>
+<p><strong>Everyday analogy.</strong> A row of numbered lockers. If you know the locker number you open it instantly. Inserting a new locker in the middle means every locker after it must shift one place.</p>
+<p>PHP link: a Python list used by position is like a PHP indexed array (<code>$items[2]</code>); NumPy is closer to a typed matrix library.</p>
+<hr />
+<h2>B. Core Concepts</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Index</td>
+<td>Position of an element, starting at 0.</td>
+</tr>
+<tr>
+<td>Length</td>
+<td>Number of elements, <code>len(items)</code>.</td>
+</tr>
+<tr>
+<td>Traversal</td>
+<td>Visiting every element once.</td>
+</tr>
+<tr>
+<td>Shifting</td>
+<td>Moving elements to make or close a gap.</td>
+</tr>
+<tr>
+<td>Two pointers</td>
+<td>Two indexes that move through the array (from both ends or one behind the other).</td>
+</tr>
+<tr>
+<td>In place</td>
+<td>Changing the original array without a second array.</td>
+</tr>
+<tr>
+<td>2D array</td>
+<td>An array of rows: <code>matrix[row][column]</code>.</td>
+</tr>
+<tr>
+<td><code>ndarray</code></td>
+<td>NumPy array: all elements share one type and are stored contiguously.</td>
+</tr>
+<tr>
+<td>View vs copy</td>
+<td>A NumPy slice shares memory with the original (view); <code>.copy()</code> makes an independent array.</td>
+</tr>
+<tr>
+<td>Vectorised operation</td>
+<td>One NumPy expression applied to all elements, no Python loop.</td>
+</tr>
+<tr>
+<td>Broadcasting</td>
+<td>NumPy stretches a smaller array (such as a scalar or a row) across a bigger one.</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-text">index:    0    1    2    3    4    5
+        +----+----+----+----+----+----+
+values: | 12 | 45 |  7 | 45 |  3 | 29 |
+        +----+----+----+----+----+----+
+negative: -6   -5   -4   -3   -2   -1
+</code></pre>
+<pre><code class="language-text">2D array (3 rows x 4 columns)
+          col0 col1 col2 col3
+   row0 [  1    2    3    4 ]
+   row1 [  5    6    7    8 ]
+   row2 [  9   10   11   12 ]
+element (1, 2) is 7  -&gt;  matrix[1][2]
+</code></pre>
+<p><strong>Standard Python and NumPy are kept separate:</strong> files 01-07 never import NumPy; files 08, 09 and 10 import it only inside the part that needs it (file 09 also contains a pure Python half).</p>
+<hr />
+<h2>C. How It Works</h2>
+<p><strong>Insert 25 at index 2 into <code>[10, 20, 30, 40, 50]</code> (shift right, from the end)</strong></p>
+<pre><code class="language-text">start:        [10, 20, 30, 40, 50]
+make room:    [10, 20, 30, 40, 50, __]
+shift 50:     [10, 20, 30, 40, 50, 50]
+shift 40:     [10, 20, 30, 40, 40, 50]
+shift 30:     [10, 20, 30, 30, 40, 50]
+write 25:     [10, 20, 25, 30, 40, 50]      3 shifts
+</code></pre>
+<p>Shifting must go right to left; going left to right would overwrite values you still need.</p>
+<p><strong>Reverse with two pointers: <code>[1, 2, 3, 4]</code></strong></p>
+<pre><code class="language-text">left=0 right=3  swap -&gt; [4, 2, 3, 1]
+left=1 right=2  swap -&gt; [4, 3, 2, 1]
+left=2 right=1  stop (crossed)
+</code></pre>
+<p><strong>Rotate right by 3 with three reversals: <code>[1..7]</code></strong></p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>reverse all</td>
+<td><code>[7, 6, 5, 4, 3, 2, 1]</code></td>
+</tr>
+<tr>
+<td>reverse first 3</td>
+<td><code>[5, 6, 7, 4, 3, 2, 1]</code></td>
+</tr>
+<tr>
+<td>reverse last 4</td>
+<td><code>[5, 6, 7, 1, 2, 3, 4]</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Binary search on a sorted array</strong> looks at the middle and throws away half each time, which is why it needs only about <code>log2(n)</code> steps.</p>
+<p><strong>NumPy slice is a view</strong></p>
+<pre><code class="language-text">values = [10 20 30 40 50 60]
+view = values[1:3]      # shares memory
+view[0] = 999
+values -&gt; [10 999 30 40 50 60]     (original changed!)
+</code></pre>
+<hr />
+<h2>D. Time and Space Complexity</h2>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Python list</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Read / write by index</td>
+<td>O(1)</td>
+<td>direct address</td>
+</tr>
+<tr>
+<td>Traverse</td>
+<td>O(n)</td>
+<td></td>
+</tr>
+<tr>
+<td>Append at end</td>
+<td>O(1) amortised</td>
+<td></td>
+</tr>
+<tr>
+<td>Insert / delete at front or middle</td>
+<td>O(n)</td>
+<td>shifting</td>
+</tr>
+<tr>
+<td>Linear search</td>
+<td>O(n)</td>
+<td>any order</td>
+</tr>
+<tr>
+<td>Binary search</td>
+<td>O(log n)</td>
+<td>sorted only</td>
+</tr>
+<tr>
+<td>Reverse in place</td>
+<td>O(n) time, O(1) space</td>
+<td>two pointers</td>
+</tr>
+<tr>
+<td>Rotate (three reversals)</td>
+<td>O(n) time, O(1) space</td>
+<td></td>
+</tr>
+<tr>
+<td>Remove duplicates, sorted, in place</td>
+<td>O(n) time, O(1) space</td>
+<td>slow and fast pointer</td>
+</tr>
+<tr>
+<td>Merge two sorted arrays</td>
+<td>O(n + m) time, O(n + m) space</td>
+<td></td>
+</tr>
+<tr>
+<td>Matrix traversal</td>
+<td>O(rows * cols)</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>NumPy: element access O(1); slicing O(1) (a view); arithmetic, <code>sum</code>, <code>mean</code>, <code>max</code>, boolean filtering O(n); <code>np.sort</code> O(n log n). NumPy is faster in practice because the loops run in compiled C, not because the Big O is different.</p>
+<hr />
+<h2>E. Problems for Practice</h2>
+<table>
+<thead>
+<tr>
+<th>No</th>
+<th>Title</th>
+<th>Difficulty</th>
+<th>Concept</th>
+<th>Python File</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Array Traversal</td>
+<td>Easy</td>
+<td>Forward, backward, every k-th, two ends</td>
+<td><code>01_array_traversal.py</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Find Maximum, Minimum and Second Largest</td>
+<td>Easy</td>
+<td>Running-best pattern</td>
+<td><code>02_find_maximum.py</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Insert and Delete by Index</td>
+<td>Easy</td>
+<td>Manual shifting</td>
+<td><code>03_insert_and_delete.py</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Linear and Binary Search</td>
+<td>Easy</td>
+<td>Searching, sorted data</td>
+<td><code>04_linear_and_binary_search.py</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Reverse an Array</td>
+<td>Easy</td>
+<td>Two pointers, swap</td>
+<td><code>05_reverse_array.py</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Rotate an Array by K Positions</td>
+<td>Medium</td>
+<td>Three-reversal trick, <code>k % n</code></td>
+<td><code>06_rotate_array.py</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Remove Duplicates and Merge Sorted Arrays</td>
+<td>Medium</td>
+<td>Slow/fast pointers, merging</td>
+<td><code>07_duplicates_and_merge.py</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>NumPy Basics</td>
+<td>Easy</td>
+<td>Creating, indexing, slicing, views (NumPy)</td>
+<td><code>08_numpy_basics.py</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>Two-Dimensional Arrays</td>
+<td>Medium</td>
+<td>Matrices with lists and NumPy</td>
+<td><code>09_two_dimensional_arrays.py</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>NumPy Array Operations</td>
+<td>Medium</td>
+<td>Vectorising, broadcasting, statistics (NumPy)</td>
+<td><code>10_numpy_array_operations.py</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Problem 1 - Array Traversal (<code>01_array_traversal.py</code>)</h3>
+<p><strong>Statement.</strong> Given a list of integers, produce its elements forward, backward, as <code>"index -&gt; value"</code> text, every k-th element, and alternating from both ends (first, last, second, second-last, ...).</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">numbers = [4, 8, 15, 16, 23, 42]
+backward: [42, 23, 16, 15, 8, 4]
+every 2nd: [4, 15, 23]
+both ends: [4, 42, 8, 23, 15, 16]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list; single element; odd length (middle visited once).</p>
+<p><strong>Hints.</strong>
+- <code>range</code> accepts a start, stop and step (negative steps go backward).
+- For both ends keep a left index and a right index and move them toward each other.
+- When the indexes meet, add that element only once.</p>
+<h3>Problem 2 - Find Maximum, Minimum and Second Largest (<code>02_find_maximum.py</code>)</h3>
+<p><strong>Statement.</strong> Without <code>max()</code> or <code>min()</code>, return the largest and smallest value with their indexes, and the second largest distinct value.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">numbers = [12, 45, 7, 45, 3, 29]
+maximum (value, index): (45, 1)    minimum: (3, 4)    second largest: 29
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list gives <code>None</code>; one element has no second largest; all equal means no second distinct value; negatives must work; with duplicates keep the first index.</p>
+<p><strong>Hints.</strong>
+- Start from the first element, not from 0.
+- Use a strict comparison to keep the first index.
+- For the second largest keep two variables and decide carefully what happens on equality with the largest.</p>
+<h3>Problem 3 - Insert and Delete by Index (<code>03_insert_and_delete.py</code>)</h3>
+<p><strong>Statement.</strong> Write <code>insert_at(items, index, value)</code> and <code>delete_at(items, index)</code> by shifting elements manually (no <code>list.insert</code> or <code>list.pop(index)</code> doing the work). Report how many elements were shifted.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[10, 20, 30, 40, 50] insert 25 at index 2 -&gt; [10, 20, 25, 30, 40, 50], shifts = 3
+insert at the end -&gt; shifts = 0
+delete index 0 from [5, 10, ...] -&gt; shifts = 7
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Index equal to length is a valid insert; empty list; out-of-range index must be rejected; negative index rejected.</p>
+<p><strong>Hints.</strong>
+- Insert: grow the list, then copy elements one step right starting from the last one.
+- Delete: copy elements one step left, then drop the final duplicate slot.
+- Direction of copying matters; draw a 5-element example first.</p>
+<h3>Problem 4 - Linear and Binary Search (<code>04_linear_and_binary_search.py</code>)</h3>
+<p><strong>Statement.</strong> Return the index of a target or <code>-1</code>. Implement linear search and binary search and count comparisons for each.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">numbers = [3, 8, 12, 19, 25, 31, 47, 52, 60, 74]
+target 47: linear (6, 7), binary (6, 4)
+target 50: linear (-1, 10), binary (-1, 4)
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list; target below first or above last; duplicates (binary search returns any match); input must be sorted for binary search.</p>
+<p><strong>Hints.</strong>
+- Binary search keeps a low and a high bound and checks the middle.
+- Decide which bound moves when the middle value is smaller than the target.
+- Loop while <code>low &lt;= high</code>.</p>
+<h3>Problem 5 - Reverse an Array (<code>05_reverse_array.py</code>)</h3>
+<p><strong>Statement.</strong> Reverse a list in place (no <code>reverse()</code>, <code>reversed()</code> or <code>[::-1]</code>) and also return a reversed copy without touching the original.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[1, 2, 3, 4, 5, 6] -&gt; [6, 5, 4, 3, 2, 1]   swaps = 3
+[50, 40, 30, 20, 10] for odd length input [10, 20, 30, 40, 50]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty, single element, odd length, palindrome.</p>
+<p><strong>Hints.</strong>
+- Two indexes at the ends, swap, move inward.
+- Stop when they meet or cross.
+- The copy version can walk from the last index to the first.</p>
+<h3>Problem 6 - Rotate an Array by K Positions (<code>06_rotate_array.py</code>)</h3>
+<p><strong>Statement.</strong> Rotate a list to the right by <code>k</code> in place; also support left rotation.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[1, 2, 3, 4, 5, 6, 7], k = 3 -&gt; [5, 6, 7, 1, 2, 3, 4]
+k = 10 acts like k = 3;  k = -1 rotates left by one
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty list (avoid modulo by zero); <code>k = 0</code> or multiple of <code>n</code>; <code>k &gt; n</code>; negative <code>k</code>.</p>
+<p><strong>Hints.</strong>
+- Reduce <code>k</code> first with the modulo operator.
+- Reversing the whole list moves the last <code>k</code> items to the front, but backward.
+- Reverse the two blocks separately to fix their order.</p>
+<h3>Problem 7 - Remove Duplicates and Merge Sorted Arrays (<code>07_duplicates_and_merge.py</code>)</h3>
+<p><strong>Statement.</strong> (a) Remove duplicates from a sorted list in place and return the new length. (b) Merge two sorted lists. (c) Return the values that appear more than once in any list.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">[1, 1, 2, 2, 2, 3, 5, 5] -&gt; [1, 2, 3, 5], length 4
+merge [1, 4, 7] and [2, 3, 9, 10] -&gt; [1, 2, 3, 4, 7, 9, 10]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty lists; all elements equal; one list much longer; (a) and (b) need sorted input.</p>
+<p><strong>Hints.</strong>
+- Keep a write position and a read position; copy only when the read value differs from the last kept one.
+- Merging: compare the two fronts, take the smaller, then append what is left.
+- A set remembers values already seen.</p>
+<h3>Problem 8 - NumPy Basics (<code>08_numpy_basics.py</code>) - requires NumPy</h3>
+<p><strong>Statement.</strong> Create arrays with several constructors, print shape/dtype/size, then index, slice, use negative indexes, boolean masks, and demonstrate that a slice is a view while <code>.copy()</code> is independent.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">values = np.array([10, 20, 30, 40, 50, 60])
+values[1:4] -&gt; [20 30 40]       values[::-1] -&gt; [60 50 40 30 20 10]
+values[values &gt; 25] -&gt; [30 40 50 60]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Out-of-range index raises <code>IndexError</code>; mixing ints and floats gives a float array; forgetting <code>.copy()</code> modifies the original.</p>
+<p><strong>Hints.</strong>
+- Use <code>zeros</code>, <code>ones</code>, <code>arange</code> and <code>linspace</code> for creation.
+- Slicing syntax is <code>[start:stop:step]</code>, same as lists.
+- A comparison such as <code>values &gt; 25</code> gives a boolean array you can index with.</p>
+<h3>Problem 9 - Two-Dimensional Arrays (<code>09_two_dimensional_arrays.py</code>) - NumPy for the second half</h3>
+<p><strong>Statement.</strong> For a 3 x 4 matrix compute row sums, column sums, transpose and the main-diagonal sum, first with nested lists, then with NumPy, and check both agree. Also show the shared-row bug of <code>[[0] * 3] * 2</code>.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">matrix = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]]
+row sums: [10, 26, 42]     column sums: [15, 18, 21, 24]
+diagonal sum: 18           pure Python equals NumPy: True
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty matrix; non-square matrices (diagonal stops at the shorter side); ragged rows are invalid.</p>
+<p><strong>Hints.</strong>
+- Element <code>(r, c)</code> sits at <code>matrix[r][c]</code>.
+- Transpose swaps the roles of row and column index.
+- NumPy uses the <code>axis</code> argument to choose rows or columns.</p>
+<h3>Problem 10 - NumPy Array Operations (<code>10_numpy_array_operations.py</code>) - requires NumPy</h3>
+<p><strong>Statement.</strong> Given daily sales, apply a 10 percent discount, find total, average, max/min with their day, count days above average, sort, cumulative totals, add arrays, broadcast a row over a matrix, and verify against a plain loop.</p>
+<p><strong>Example.</strong></p>
+<pre><code class="language-text">sales = [120 340  90 560 210 430  75]
+total: 1825 | average: 260.71    maximum: 560 on day index 3
+days above average: [340 560 430]
+</code></pre>
+<p><strong>Constraints / edge cases.</strong> Empty array: sum is fine but max raises <code>ValueError</code>; integer arrays become float after multiplying by 0.9; broadcasting needs compatible shapes.</p>
+<p><strong>Hints.</strong>
+- Arithmetic on the whole array needs no loop.
+- <code>argmax</code> returns a position, not a value.
+- A boolean mask built from <code>sales &gt; average</code> filters the array.</p>
+<hr />
+<h2>F. Installation Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python version</td>
+<td>Python 3.8 or newer</td>
+</tr>
+<tr>
+<td>Standard library only</td>
+<td>Files <code>01</code> to <code>07</code> (nothing to install)</td>
+</tr>
+<tr>
+<td>Third-party package</td>
+<td>NumPy, needed only for <code>08_numpy_basics.py</code>, <code>09_two_dimensional_arrays.py</code> (its NumPy half) and <code>10_numpy_array_operations.py</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Installing NumPy</strong> (one time):</p>
+<pre><code class="language-bash">python -m pip install numpy
+</code></pre>
+<p>On Linux/macOS use <code>python3 -m pip install numpy</code>. On Windows, if <code>python</code> is not recognised, use <code>py -m pip install numpy</code>. Verify with:</p>
+<pre><code class="language-bash">python -c &quot;import numpy; print(numpy.__version__)&quot;
+</code></pre>
+<p>NumPy is optional for the whole topic: you can solve problems 1-7 with no extra installation. If NumPy is missing, files 08 and 10 stop with an <code>ImportError</code> telling you to install it. File 09 needs it for the NumPy half.</p>
+<p>Why <code>python -m pip</code> and not just <code>pip</code>? It guarantees that NumPy is installed for the same Python you use to run the scripts.</p>
+<hr />
+<h2>G. How to Run the Files</h2>
+<ol>
+<li>Open a terminal (Windows: <code>cmd</code>, PowerShell or the VS Code terminal; Linux/macOS: Terminal).</li>
+<li>Verify Python:
+   <code>bash
+   python --version      # Windows (or: py --version)
+   python3 --version     # Linux / macOS</code></li>
+<li>Go to the folder and run a file.</li>
+</ol>
+<p><strong>Windows</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice\02-Arrays-Numpy-and-Python
+python 01_array_traversal.py
+python -m pip install numpy
+python 08_numpy_basics.py
+</code></pre>
+<p>(<code>py 01_array_traversal.py</code> also works.)</p>
+<p><strong>Linux / macOS</strong></p>
+<pre><code class="language-bash">cd Python-DSA-Practice/02-Arrays-Numpy-and-Python
+python3 01_array_traversal.py
+python3 -m pip install numpy
+python3 08_numpy_basics.py
+</code></pre>
+<hr />
+<h2>H. Revision Notes</h2>
+<p><strong>Key concepts</strong>
+- Index access is O(1); insert or delete in the middle is O(n) because of shifting.
+- Two pointers solve reversing, palindromes, merging, de-duplication and many search tasks in O(n) with O(1) space.
+- Binary search needs sorted data and gives O(log n).
+- Rotation: <code>k % n</code>, then three reversals.
+- NumPy: same indexing as lists, vectorised math, slices are views, broadcasting stretches smaller shapes.</p>
+<p><strong>Common mistakes</strong>
+- Off-by-one errors with <code>len(items)</code> versus last index <code>len(items) - 1</code>.
+- Shifting in the wrong direction and overwriting data.
+- Forgetting <code>k % n</code> (or <code>n = 0</code>) when rotating.
+- Building a matrix with <code>[[0] * c] * r</code> (all rows are the same list).
+- Modifying a NumPy slice and not realising the original changes.
+- Calling binary search on unsorted data.</p>
+<p><strong>Interview tips</strong>
+- Ask: is the array sorted? can it contain duplicates or negatives? can it be empty?
+- Mention the in-place O(1)-space option after giving a simple solution.
+- For "second largest" explain how you handle duplicates.
+- Know when a hash set trades O(n) space for O(n) time.
+- Be able to say why NumPy is faster: typed contiguous memory and loops in C.</p>
